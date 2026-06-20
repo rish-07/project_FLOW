@@ -29,24 +29,19 @@
     }
   ];
 
-  $: pathname = $page.url.pathname;
+  let pathname = $derived($page.url.pathname);
   const isActive = (href: string) => pathname === href || pathname.startsWith(href + '/');
 </script>
 
 <nav class="tab-bar" aria-label="Primary">
-  <ul class="mx-auto flex h-16 max-w-[1280px] items-stretch">
+  <ul class="tab-list container-app">
     {#each tabs as tab (tab.href)}
       {@const active = isActive(tab.href)}
-      <li class="flex-1">
-        <a
-          href={tab.href}
-          aria-current={active ? 'page' : undefined}
-          class="flex h-full flex-col items-center justify-center gap-1 transition-colors duration-150 {active
-            ? 'text-[var(--color-accent)]'
-            : 'text-[var(--color-text-tertiary)]'}"
-        >
+      <li class="tab-item">
+        <a href={tab.href} aria-current={active ? 'page' : undefined} class="tab-link" class:active>
+          <span class="active-rule" aria-hidden="true"></span>
           <svg
-            class="h-6 w-6"
+            class="tab-icon"
             viewBox="0 0 24 24"
             aria-hidden="true"
             fill={active ? 'currentColor' : 'none'}
@@ -57,9 +52,71 @@
           >
             <path d={active ? tab.solid : tab.outline} />
           </svg>
-          <span class="text-xs font-medium">{tab.label}</span>
+          <span class="tab-label">{tab.label}</span>
         </a>
       </li>
     {/each}
   </ul>
 </nav>
+
+<style>
+  .tab-list {
+    display: flex;
+    align-items: stretch;
+    height: var(--tab-bar-height);
+  }
+  .tab-item {
+    flex: 1;
+  }
+  .tab-link {
+    position: relative;
+    display: flex;
+    height: 100%;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-0h);
+    color: var(--color-text-tertiary);
+    transition: color var(--duration-base) var(--ease-premium);
+  }
+  .tab-link.active {
+    color: var(--color-accent);
+  }
+
+  /* Brass rule above the active tab — a deliberate short rule (inset, not
+     full-width), like a tab divider in a ledger. The primary active signal;
+     icon/label colour is secondary reinforcement (colour-not-only). */
+  .active-rule {
+    position: absolute;
+    top: 0;
+    left: 12px;
+    right: 12px;
+    height: 2px;
+    background-color: var(--color-accent);
+    opacity: 0;
+    transform: scaleX(0.6);
+    transform-origin: center;
+    transition:
+      opacity var(--duration-base) var(--ease-premium),
+      transform var(--duration-base) var(--ease-premium);
+  }
+  .tab-link.active .active-rule {
+    opacity: 1;
+    transform: scaleX(1);
+  }
+
+  .tab-icon {
+    width: 1.5rem;
+    height: 1.5rem;
+  }
+  .tab-label {
+    font-size: var(--text-xs);
+    font-weight: 500;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .active-rule {
+      transition: none;
+    }
+  }
+</style>

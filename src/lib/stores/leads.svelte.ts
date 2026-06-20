@@ -1,6 +1,7 @@
-// Leads-page UI + data state, module-scoped so it survives `load` re-runs — e.g.
-// open venues stay open after an import injects new rows (spec §9). selected and
-// activeOverlay arrive in later sub-steps.
+// Leads-page UI + data state, module-scoped so it survives `load` re-runs. The
+// rail + open-spread layout (design-system.md §9) keeps exactly one venue
+// "open" at a time, rather than independent per-venue accordions — an import
+// switches the active venue so the new rows are immediately visible.
 
 export type Status =
   | 'new'
@@ -37,17 +38,17 @@ export interface Lead {
 // Leads status handler will later call openOverlay() for specific transitions
 // (e.g. booked → payment). It stays null/idle until those features are built.
 export const leadsUi = $state<{
-  openVenues: Record<string, boolean>;
+  activeVenueId: string | null;
   leadsByVenue: Record<string, Lead[]>;
   activeOverlay: { type: string; leadId: string } | null;
 }>({
-  openVenues: {},
+  activeVenueId: null,
   leadsByVenue: {},
   activeOverlay: null
 });
 
-export function toggleVenue(id: string): void {
-  leadsUi.openVenues[id] = !leadsUi.openVenues[id];
+export function setActiveVenue(id: string): void {
+  leadsUi.activeVenueId = id;
 }
 
 export function openOverlay(type: string, leadId: string): void {
@@ -64,5 +65,5 @@ export function addLeads(venueId: string, rows: Lead[]): void {
   const fresh = rows.map((r) => ({ ...r, isNew: true }));
   const existing = leadsUi.leadsByVenue[venueId] ?? [];
   leadsUi.leadsByVenue[venueId] = [...fresh, ...existing];
-  leadsUi.openVenues[venueId] = true; // reveal the venue so the new rows are visible
+  leadsUi.activeVenueId = venueId; // open this venue so the new rows are visible
 }

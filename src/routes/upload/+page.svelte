@@ -111,20 +111,13 @@
 
 <svelte:head><title>Upload · Booking Capture</title></svelte:head>
 
-<div class="upload-screen">
-  <p class="overline">Step 1</p>
-
-  <!-- Primary affordance: tap / click / drag-drop to add a diary photo. -->
-  <input
-    bind:this={fileInput}
-    type="file"
-    accept="image/*"
-    onchange={onFileChange}
-    hidden
-  />
+<div class="upload-desk">
+  <!-- Capture zone: the dominant mass, full-bleed, bound-page left edge.
+       No card chrome (design-system.md §5/§7/§9). -->
+  <input bind:this={fileInput} type="file" accept="image/*" onchange={onFileChange} hidden />
   <button
     type="button"
-    class="dropzone"
+    class="capture-zone"
     class:has-photo={!!previewUrl}
     class:dragging
     aria-label="Add a diary photo"
@@ -136,130 +129,102 @@
     {#if previewUrl}
       <img class="preview" src={previewUrl} alt="Selected diary page" />
       <span class="change-hint">Tap or drop to change photo</span>
+      {#if loading}
+        <div class="scan-overlay" role="status" aria-live="polite">
+          <span class="scan-line" aria-hidden="true"></span>
+          <div class="scan-caption">
+            <p class="scan-text text-h4">Reading the page…</p>
+            <p class="scan-sub">Extracting bookings — this takes a few seconds.</p>
+          </div>
+        </div>
+      {/if}
     {:else}
-      <span class="dropzone-icon">
-        <svg
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="1.5"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          aria-hidden="true"
-        >
-          <path
-            d="M6.827 6.175A2.31 2.31 0 0 1 5.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 0 0-1.134-.175 2.31 2.31 0 0 1-1.64-1.055l-.822-1.316a2.192 2.192 0 0 0-1.736-1.039 48.774 48.774 0 0 0-5.232 0 2.192 2.192 0 0 0-1.736 1.039l-.821 1.316Z"
-          />
+      <span class="capture-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M6.827 6.175A2.31 2.31 0 0 1 5.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 0 0-1.134-.175 2.31 2.31 0 0 1-1.64-1.055l-.822-1.316a2.192 2.192 0 0 0-1.736-1.039 48.774 48.774 0 0 0-5.232 0 2.192 2.192 0 0 0-1.736 1.039l-.821 1.316Z" />
           <path d="M16.5 12.75a4.5 4.5 0 1 1-9 0 4.5 4.5 0 0 1 9 0ZM18.75 10.5h.008v.008h-.008V10.5Z" />
         </svg>
       </span>
-      <span class="dropzone-title">Drag &amp; drop a diary photo</span>
-      <span class="dropzone-hint">JPG, PNG or WEBP — up to 10&nbsp;MB</span>
+      <span class="capture-title text-h4">Add a page to the ledger</span>
+      <span class="capture-hint">JPG, PNG or WEBP — up to 10&nbsp;MB</span>
       <span class="browse-cta">Browse files</span>
     {/if}
   </button>
 
-  <!-- Venue picker sits below the zone so it never crowds the main action. -->
-  <section class="venue-section">
-    <label class="field-label" for="venue">Which venue's diary is this?</label>
+  <!-- Margin rail: secondary controls, on the elevated tone (design-system.md §4/§9). -->
+  <aside class="margin-rail">
+    <p class="overline">Step 1</p>
 
-    {#if data.venues.length}
-      <div class="select-wrap">
-        <select id="venue" class="input-field select-field" bind:value={venueId}>
-          {#each data.venues as v (v.id)}
-            <option value={v.id}>{v.name}</option>
-          {/each}
-        </select>
-        <svg
-          class="select-chevron"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="1.5"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          aria-hidden="true"
+    <section class="venue-section">
+      <label class="field-label" for="venue">Which venue's diary is this?</label>
+
+      {#if data.venues.length}
+        <div class="select-wrap">
+          <select id="venue" class="input-field select-field" bind:value={venueId}>
+            {#each data.venues as v (v.id)}
+              <option value={v.id}>{v.name}</option>
+            {/each}
+          </select>
+          <svg class="select-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="m6 9 6 6 6-6" />
+          </svg>
+        </div>
+      {:else}
+        <p class="empty-venues">No venues yet — add one below to get started.</p>
+      {/if}
+
+      {#if addOpen}
+        <form
+          method="POST"
+          action="?/addVenue"
+          class="add-venue-form"
+          use:enhance={() => {
+            return async ({ update }) => {
+              await update();
+            };
+          }}
         >
-          <path d="m6 9 6 6 6-6" />
-        </svg>
+          <div class="add-row">
+            <input class="input-field" name="name" placeholder="Venue name" autocomplete="off" required />
+            <input class="input-field" name="phone" type="tel" inputmode="tel" placeholder="Phone (optional)" autocomplete="off" />
+          </div>
+          {#if form?.addError}
+            <p class="add-error" role="alert">{form.addError}</p>
+          {/if}
+          <div class="add-actions">
+            <button type="submit" class="btn-primary add-save">Save venue</button>
+            <button type="button" class="add-cancel" onclick={() => (addOpen = false)}>Cancel</button>
+          </div>
+        </form>
+      {:else}
+        <button type="button" class="add-venue-toggle" onclick={() => (addOpen = true)}>
+          + Add a venue
+        </button>
+      {/if}
+    </section>
+
+    {#if errorMsg}
+      <div class="error-card" role="alert">
+        <p class="error-text">{errorMsg}</p>
+        <button type="button" class="retry-btn" onclick={() => (errorMsg = '')}>Try again</button>
       </div>
-    {:else}
-      <p class="empty-venues">No venues yet — add one below to get started.</p>
     {/if}
 
-    {#if addOpen}
-      <form
-        method="POST"
-        action="?/addVenue"
-        class="add-venue-form"
-        use:enhance={() => {
-          return async ({ update }) => {
-            await update();
-          };
-        }}
-      >
-        <div class="add-row">
-          <input class="input-field" name="name" placeholder="Venue name" autocomplete="off" required />
-          <input
-            class="input-field"
-            name="phone"
-            type="tel"
-            inputmode="tel"
-            placeholder="Phone (optional)"
-            autocomplete="off"
-          />
-        </div>
-        {#if form?.addError}
-          <p class="add-error" role="alert">{form.addError}</p>
-        {/if}
-        <div class="add-actions">
-          <button type="submit" class="btn-primary add-save">Save venue</button>
-          <button type="button" class="add-cancel" onclick={() => (addOpen = false)}>Cancel</button>
-        </div>
-      </form>
-    {:else}
-      <button type="button" class="add-venue-toggle" onclick={() => (addOpen = true)}>
-        + Add a venue
-      </button>
-    {/if}
-  </section>
-
-  {#if errorMsg}
-    <div class="error-card" role="alert">
-      <p class="error-text">{errorMsg}</p>
-      <button type="button" class="retry-btn" onclick={() => (errorMsg = '')}>Try again</button>
-    </div>
-  {/if}
-
-  <button
-    class="btn-primary submit-cta"
-    type="button"
-    onclick={submit}
-    disabled={!file || !venueId || loading}
-  >
-    {loading ? 'Reading…' : 'Read the diary page'}
-  </button>
+    <button class="btn-primary submit-cta" type="button" onclick={submit} disabled={!file || !venueId || loading}>
+      {loading ? 'Reading…' : 'Read the diary page'}
+    </button>
+  </aside>
 </div>
 
-{#if loading}
-  <div class="loading-overlay glass" role="status" aria-live="polite">
-    <div class="loading-card">
-      <div class="pulse-dots" aria-hidden="true"><span></span><span></span><span></span></div>
-      <p class="loading-text">Reading the diary page…</p>
-      <p class="loading-sub">Extracting bookings — this takes a few seconds.</p>
-    </div>
-  </div>
-{/if}
-
 <style>
-  .upload-screen {
+  .upload-desk {
     display: flex;
     flex-direction: column;
     gap: var(--spacing-2);
   }
 
-  /* ── Capture zone ──────────────────────────────────────────────── */
-  .dropzone {
+  /* ── Capture zone — the dominant mass, bound-page edge ─────────────────── */
+  .capture-zone {
     appearance: none;
     -webkit-appearance: none;
     position: relative;
@@ -269,48 +234,46 @@
     justify-content: center;
     gap: var(--spacing-1);
     width: 100%;
-    min-height: clamp(18rem, 42vh, 30rem);
+    min-height: clamp(20rem, 48vh, 34rem);
     padding: var(--spacing-4);
     text-align: center;
     font: inherit;
     color: inherit;
     background-color: var(--color-bg-elevated);
-    border: 2px dashed var(--color-border-strong);
+    border: 1px solid var(--color-border-base);
     border-radius: var(--radius-lg);
     cursor: pointer;
     overflow: hidden;
+    /* Bound-page gutter — a subtle inset shadow suggesting a notebook edge,
+       not a card border (design-system.md §9). */
+    box-shadow: inset 6px 0 12px -8px rgba(0, 0, 0, 0.25);
     transition:
-      border-color var(--duration-short) var(--ease-standard),
-      background-color var(--duration-short) var(--ease-standard);
+      background-color var(--duration-base) var(--ease-premium),
+      border-color var(--duration-base) var(--ease-premium);
   }
-  .dropzone:hover {
-    border-color: var(--color-accent);
+  .capture-zone:hover {
     background-color: var(--color-bg-sunken);
+    border-color: var(--color-border-strong);
   }
-  /* Active drag-over state — clearly invite the drop. */
-  .dropzone.dragging {
-    border-color: var(--color-accent);
+  .capture-zone.dragging {
     background-color: var(--color-accent-subtle);
+    border-color: var(--color-accent);
   }
-  .dropzone.has-photo {
-    border-style: solid;
-    border-color: var(--color-border-base);
+  .capture-zone.has-photo {
     padding: 0;
   }
 
-  .dropzone-icon {
+  .capture-icon {
     color: var(--color-text-tertiary);
   }
-  .dropzone-icon svg {
+  .capture-icon svg {
     width: 2.5rem;
     height: 2.5rem;
   }
-  .dropzone-title {
-    font-size: var(--text-lg);
-    font-weight: 600;
+  .capture-title {
     color: var(--color-text-primary);
   }
-  .dropzone-hint {
+  .capture-hint {
     font-size: var(--text-sm);
     color: var(--color-text-tertiary);
   }
@@ -326,13 +289,13 @@
     font-size: var(--text-sm);
     font-weight: 600;
     color: var(--color-text-primary);
-    background-color: var(--color-bg-base);
+    background-color: transparent;
     transition:
-      border-color var(--duration-short) var(--ease-standard),
-      color var(--duration-short) var(--ease-standard);
+      border-color var(--duration-base) var(--ease-premium),
+      color var(--duration-base) var(--ease-premium);
   }
-  .dropzone:hover .browse-cta,
-  .dropzone:focus-visible .browse-cta {
+  .capture-zone:hover .browse-cta,
+  .capture-zone:focus-visible .browse-cta {
     border-color: var(--color-accent);
     color: var(--color-accent-text);
   }
@@ -340,7 +303,7 @@
   .preview {
     width: 100%;
     height: 100%;
-    min-height: clamp(18rem, 42vh, 30rem);
+    min-height: clamp(20rem, 48vh, 34rem);
     object-fit: cover;
     display: block;
   }
@@ -354,11 +317,53 @@
     color: var(--color-text-inverse);
     background-color: color-mix(in srgb, var(--color-bg-base) 70%, transparent);
     border-radius: var(--radius-full);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
   }
 
-  /* ── Venue picker ──────────────────────────────────────────────── */
+  /* ── Signature loading state: a scan, not a spinner (design-system.md §6) ── */
+  .scan-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: flex-end;
+    overflow: hidden;
+    background: color-mix(in srgb, var(--color-bg-base) 35%, transparent);
+  }
+  .scan-line {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--color-accent);
+    box-shadow: 0 0 16px 2px var(--color-accent);
+    animation: scan-sweep 1.8s var(--ease-standard) infinite;
+  }
+  .scan-caption {
+    position: relative;
+    width: 100%;
+    padding: var(--spacing-3) var(--spacing-2);
+    text-align: center;
+    background: linear-gradient(to top, color-mix(in srgb, var(--color-bg-base) 85%, transparent), transparent);
+  }
+  .scan-text {
+    color: var(--color-text-inverse);
+  }
+  .scan-sub {
+    margin-top: var(--spacing-0h);
+    font-size: var(--text-sm);
+    color: var(--color-text-inverse);
+    opacity: 0.8;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .scan-line { animation: none; top: 50%; }
+  }
+
+  /* ── Margin rail ────────────────────────────────────────────────────────── */
+  .margin-rail {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-2);
+  }
+
   .venue-section {
     display: flex;
     flex-direction: column;
@@ -401,7 +406,7 @@
     font-size: var(--text-sm);
     font-weight: 500;
     color: var(--color-accent-text);
-    transition: color var(--duration-short) var(--ease-standard);
+    transition: color var(--duration-base) var(--ease-premium);
   }
   .add-venue-toggle:hover {
     color: var(--color-accent);
@@ -438,6 +443,7 @@
     font-size: var(--text-sm);
     font-weight: 500;
     color: var(--color-text-secondary);
+    transition: color var(--duration-base) var(--ease-premium);
   }
   .add-cancel:hover {
     color: var(--color-text-primary);
@@ -447,7 +453,7 @@
     color: var(--color-danger-text);
   }
 
-  /* ── Error + submit ────────────────────────────────────────────── */
+  /* ── Error + submit ────────────────────────────────────────────────────── */
   .error-card {
     display: flex;
     align-items: center;
@@ -472,57 +478,26 @@
     margin-top: var(--spacing-1);
   }
 
-  /* ── Loading overlay ───────────────────────────────────────────── */
-  .loading-overlay {
-    position: fixed;
-    inset: 0;
-    z-index: 50;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: var(--spacing-3);
-  }
-  .loading-card {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: var(--spacing-2);
-    padding: var(--spacing-4);
-    text-align: center;
-    background-color: var(--color-bg-elevated);
-    border: 1px solid var(--color-border-base);
-    border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-lg);
-  }
-  .loading-text {
-    font-size: var(--text-lg);
-    font-weight: 600;
-    color: var(--color-text-primary);
-  }
-  .loading-sub {
-    font-size: var(--text-sm);
-    color: var(--color-text-secondary);
-  }
-  .pulse-dots {
-    display: flex;
-    gap: var(--spacing-1);
-  }
-  .pulse-dots span {
-    width: 0.625rem;
-    height: 0.625rem;
-    border-radius: var(--radius-full);
-    background-color: var(--color-accent);
-    animation: pulse-dot 1.2s var(--ease-standard) infinite;
-  }
-  .pulse-dots span:nth-child(2) {
-    animation-delay: 0.2s;
-  }
-  .pulse-dots span:nth-child(3) {
-    animation-delay: 0.4s;
-  }
-
-  @keyframes pulse-dot {
-    0%, 80%, 100% { opacity: 0.3; transform: scale(0.8); }
-    40% { opacity: 1; transform: scale(1); }
+  /* ── lg+: asymmetric page + margin split (design-system.md §4/§9) ───────── */
+  @media (min-width: 1024px) {
+    .upload-desk {
+      flex-direction: row;
+      align-items: stretch;
+      gap: var(--spacing-3);
+    }
+    .capture-zone {
+      flex: 0 0 64%;
+      min-height: clamp(24rem, 70vh, 40rem);
+    }
+    .preview {
+      min-height: clamp(24rem, 70vh, 40rem);
+    }
+    .margin-rail {
+      flex: 1;
+      justify-content: center;
+      padding: var(--spacing-3);
+      background-color: var(--color-bg-sunken);
+      border-radius: var(--radius-lg);
+    }
   }
 </style>

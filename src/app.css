@@ -7,36 +7,40 @@
 @theme {
 
   /* ── Fonts ──────────────────────────────────────────────────────────── */
-  --font-sans:  "Inter Variable", "Inter", ui-sans-serif, system-ui, sans-serif;
-  --font-mono:  "JetBrains Mono", "Fira Code", ui-monospace, monospace;
+  /* Display: Fraunces — soft-serif, variable optical-size axis. Restraint
+     only: headings, never body/UI labels. design-system.md §2 */
+  --font-display: "Fraunces Variable", "Fraunces", Georgia, serif;
+  --font-sans:    "Inter Variable", "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono:    "JetBrains Mono", "Fira Code", ui-monospace, monospace;
 
-  /* ── Type scale  (Major Third — 1.25× ratio, base 16px) ─────────────── */
-  --text-2xs:   0.625rem;   /* 10px  — labels, badges           */
-  --text-xs:    0.75rem;    /* 12px  — captions, helper text     */
-  --text-sm:    0.875rem;   /* 14px  — secondary body            */
-  --text-base:  1rem;       /* 16px  — primary body              */
-  --text-lg:    1.25rem;    /* 20px  — large body / sub-heading  */
-  --text-xl:    1.5rem;     /* 24px  — H4                        */
-  --text-2xl:   1.875rem;   /* 30px  — H3                        */
-  --text-3xl:   2.375rem;   /* 38px  — H2                        */
-  --text-4xl:   3rem;       /* 48px  — H1 / screen titles        */
+  /* ── Type scale (base 16px) ──────────────────────────────────────────── */
+  --text-2xs:   0.625rem;   /* 10px  — overlines, ledger line-numbers       */
+  --text-xs:    0.75rem;    /* 12px  — captions, helper text                */
+  --text-sm:    0.875rem;   /* 14px  — secondary body                      */
+  --text-base:  1rem;       /* 16px  — primary body                        */
+  --text-lg:    1.25rem;    /* 20px  — large body / sub-heading            */
+  --text-xl:    1.5rem;     /* 24px  — H4 (Fraunces)                       */
+  --text-2xl:   1.875rem;   /* 30px  — H3 (Fraunces)                       */
+  --text-3xl:   2.375rem;   /* 38px  — H2 (Fraunces)                       */
+  --text-4xl:   3rem;       /* 48px  — H1 / screen titles (Fraunces)       */
 
   /* ── Line heights ───────────────────────────────────────────────────── */
   --leading-none:    1;
-  --leading-tight:   1.2;   /* headings                          */
-  --leading-snug:    1.35;  /* sub-headings                      */
-  --leading-normal:  1.5;   /* body text                         */
-  --leading-relaxed: 1.65;  /* long-form reading                 */
+  --leading-tight:   1.15;  /* Fraunces headings                          */
+  --leading-snug:    1.3;   /* sub-headings                                */
+  --leading-normal:  1.5;   /* body text                                   */
+  --leading-relaxed: 1.65;  /* long-form reading                           */
 
   /* ── Letter spacing ─────────────────────────────────────────────────── */
-  --tracking-tighter: -0.03em;  /* H1, H2 — large display        */
-  --tracking-tight:   -0.02em;  /* H3, H4                        */
-  --tracking-normal:   0em;     /* body                          */
-  --tracking-wide:     0.04em;  /* labels, badges (caps)         */
-  --tracking-wider:    0.08em;  /* overlines                     */
+  /* Fraunces is organic, not geometric — less tightening than Inter at the
+     same size. Over-tightening a serif kills its warmth. */
+  --tracking-tighter: -0.015em; /* H1, H2 (Fraunces)              */
+  --tracking-tight:   -0.01em;  /* H3, H4 (Fraunces)              */
+  --tracking-normal:   0em;     /* body (Inter)                   */
+  --tracking-wide:     0.04em;  /* labels, badges, caps (Inter)   */
+  --tracking-wider:    0.08em;  /* overlines (Inter)              */
 
-  /* ── Spacing (8-point grid) ─────────────────────────────────────────── */
-  /* Every spacing value is a multiple of 8px (0.5rem).                   */
+  /* ── Spacing (8-point grid — the unit, not the answer) ───────────────── */
   --spacing-0:   0;
   --spacing-0h:  0.25rem;   /*  4px — hairline gaps             */
   --spacing-1:   0.5rem;    /*  8px                             */
@@ -49,85 +53,88 @@
   --spacing-12:  6rem;      /* 96px                             */
   --spacing-16:  8rem;      /* 128px                            */
 
-  /* ── Border radius ──────────────────────────────────────────────────── */
-  --radius-sm:   0.375rem;  /*  6px — tags, badges              */
-  --radius-md:   0.625rem;  /* 10px — inputs, buttons           */
-  --radius-lg:   0.875rem;  /* 14px — cards                     */
-  --radius-xl:   1.25rem;   /* 20px — bottom sheets, modals     */
-  --radius-full: 9999px;    /* pills                            */
+  /* ── Border radius — cut paper and straight rules, not rounded plastic ── */
+  --radius-sm:   0.25rem;   /*  4px — tags, badges, dots         */
+  --radius-md:   0.375rem;  /*  6px — inputs, buttons            */
+  --radius-lg:   0.5rem;    /*  8px — panels, the open spread    */
+  --radius-xl:   0.75rem;   /* 12px — sheets, modals             */
+  --radius-full: 9999px;    /* pills, dots                       */
 
   /* ── Breakpoints ────────────────────────────────────────────────────── */
   --breakpoint-sm:  480px;   /* large phone landscape            */
   --breakpoint-md:  768px;   /* tablet                           */
-  --breakpoint-lg:  1024px;  /* desktop                         */
+  --breakpoint-lg:  1024px;  /* desktop — asymmetric splits engage */
   --breakpoint-xl:  1280px;  /* wide desktop                    */
 
   /* ── Component metrics ──────────────────────────────────────────────── */
   --tab-bar-height: 4rem;    /* 64px — bottom tab bar (excl. safe area) */
+  --rail-width:     15rem;   /* 240px — leads venue-tab rail, desktop   */
 
-  /* ── Colours — Light mode ───────────────────────────────────────────── */
+  /* ── Colours — "Parchment" (light) mode, default tokens ──────────────── */
+  /* `.dark` below overrides with "Ink", the primary dark-first experience. */
 
-  /* Background surfaces (60% of the palette) */
-  --color-bg-base:        #FAFAF9;  /* warm off-white page bg       */
-  --color-bg-elevated:    #FFFFFF;  /* cards, inputs                */
-  --color-bg-sunken:      #F3F2F0;  /* inset sections, alt rows     */
-  --color-bg-overlay:     rgba(15, 17, 23, 0.5);  /* modal scrim  */
+  /* Surfaces (60%) */
+  --color-bg-base:        #F2ECDD;  /* Parchment — warm paper            */
+  --color-bg-elevated:    #F9F5EA;  /* lighter paper — panels, inputs    */
+  --color-bg-sunken:      #E7DFC8;  /* deeper paper — inset sections     */
+  --color-bg-overlay:     rgba(27, 24, 18, 0.5);
 
-  /* Structure & text (30% of the palette) */
-  --color-text-primary:   #0F1117;  /* rich off-black — not pure #000 */
-  --color-text-secondary: #4B5060;  /* secondary labels              */
-  --color-text-tertiary:  #878C9B;  /* hints, placeholders           */
-  --color-text-inverse:   #FAFAF9;  /* text on dark/accent bg        */
-  --color-border-base:    rgba(15, 17, 23, 0.1);   /* hairline      */
-  --color-border-strong:  rgba(15, 17, 23, 0.18);  /* inputs        */
-  --color-border-focus:   #0D9488;  /* focus ring (accent)           */
+  /* Structure & text (30%) */
+  --color-text-primary:   #1B1812;  /* Ink — not pure black              */
+  --color-text-secondary: #6B6152;
+  --color-text-tertiary:  #8A7D67;
+  --color-text-inverse:   #F2ECDD;
+  --color-border-base:    rgba(27, 24, 18, 0.10);   /* hairline — low-opacity, never flat grey */
+  --color-border-strong:  rgba(27, 24, 18, 0.20);
+  --color-border-focus:   #8C6A1F;  /* darkened Brass — light-mode contrast */
 
-  /* Accent — teal (10% of the palette) */
-  /* Used ONLY for: primary CTA, active tab, links, focus rings.          */
-  /* Never use for decorative elements.                                    */
-  --color-accent:         #0D9488;  /* teal-600                     */
-  --color-accent-hover:   #0F766E;  /* teal-700                     */
-  --color-accent-subtle:  #CCFBF1;  /* teal-100 — chip bg           */
-  --color-accent-text:    #134E4A;  /* teal-900 — text on subtle    */
+  /* Accent — Brass (10%). One accent: primary action, active-tab rule,
+     focus rings, links, the open spread's rule. */
+  --color-accent:         #C89B3C;  /* Brass — fill colour (buttons, dots)  */
+  --color-accent-strong:  #8C6A1F;  /* darkened Brass — accent TEXT, light mode */
+  --color-accent-subtle:  #EFE0BB;  /* chip / highlight bg                  */
+  --color-accent-text:    #5C4513;  /* text on accent-subtle                */
 
-  /* Status colours — muted, accessible, never full-saturation */
-  --color-status-new-bg:           #F1F5F9;
-  --color-status-new-text:         #334155;
-  --color-status-no-answer-bg:     #FFFBEB;
-  --color-status-no-answer-text:   #92400E;
-  --color-status-interested-bg:    #EFF6FF;
-  --color-status-interested-text:  #1E40AF;
-  --color-status-quoted-bg:        #F5F3FF;
-  --color-status-quoted-text:      #4C1D95;
-  --color-status-booked-bg:        #F0FDF4;
-  --color-status-booked-text:      #14532D;
-  --color-status-not-int-bg:       #FEF2F2;
-  --color-status-not-int-text:     #7F1D1D;
-  --color-status-callback-bg:      #FFF7ED;
-  --color-status-callback-text:    #7C2D12;
+  /* Status — temperature mapping (cold → warming → warm → won/lost), not
+     arbitrary categories. design-system.md §3 */
+  --color-temp-cold-bg:      #E7DFC8;
+  --color-temp-cold-text:    #6B6152;
+  --color-temp-warming-bg:   #F1DDB0;
+  --color-temp-warming-text: #7A5A12;
+  --color-temp-warm-bg:      #EFE0BB;
+  --color-temp-warm-text:    #5C4513;
+  --color-temp-won-bg:       #DCE6D5;
+  --color-temp-won-text:     #3D5234;
+  --color-temp-lost-bg:      #F1DAD4;
+  --color-temp-lost-text:    #7A2F22;
 
-  /* Semantic feedback */
-  --color-warning-bg:    #FFFBEB;
-  --color-warning-text:  #92400E;
-  --color-warning-icon:  #D97706;
-  --color-danger-bg:     #FEF2F2;
-  --color-danger-text:   #7F1D1D;
-  --color-success-bg:    #F0FDF4;
-  --color-success-text:  #14532D;
+  /* Semantic feedback (system messages, not lead status) */
+  --color-warning-bg:    #F1DDB0;
+  --color-warning-text:  #7A5A12;
+  --color-warning-icon:  #9C7019;
+  --color-danger-bg:     #F1DAD4;
+  --color-danger-text:   #7A2F22;
+  --color-success-bg:    #DCE6D5;
+  --color-success-text:  #3D5234;
 
-  /* ── Shadows ────────────────────────────────────────────────────────── */
-  /* No harsh single-layer shadows. Use soft, multi-layer stacks.          */
-  --shadow-xs:  0 1px 2px rgba(15, 17, 23, 0.05);
-  --shadow-sm:  0 1px 3px rgba(15, 17, 23, 0.08), 0 1px 2px rgba(15, 17, 23, 0.04);
-  --shadow-md:  0 4px 8px rgba(15, 17, 23, 0.07), 0 2px 4px rgba(15, 17, 23, 0.04);
-  --shadow-lg:  0 12px 24px rgba(15, 17, 23, 0.09), 0 4px 8px rgba(15, 17, 23, 0.04);
-  --shadow-inset: inset 0 1px 2px rgba(15, 17, 23, 0.06);
+  /* ── Shadows ──────────────────────────────────────────────────────────
+     A ledger is flat. Depth comes from rule lines + surface-tone shifts
+     (§7), not elevation. Shadow is reserved for things that truly float. */
+  --shadow-xs:  0 1px 2px rgba(27, 24, 18, 0.04);
+  --shadow-sm:  0 2px 4px rgba(27, 24, 18, 0.06);
+  --shadow-md:  0 6px 16px rgba(27, 24, 18, 0.10);
+  --shadow-lg:  0 16px 32px rgba(27, 24, 18, 0.14);
+  --shadow-inset: inset 0 1px 2px rgba(27, 24, 18, 0.05);
 
-  /* ── Transitions ────────────────────────────────────────────────────── */
-  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);   /* most interactions  */
-  --ease-enter:    cubic-bezier(0.0, 0.0, 0.2, 1);  /* elements entering  */
-  --ease-exit:     cubic-bezier(0.4, 0.0, 1, 1);    /* elements leaving   */
-  --ease-spring:   cubic-bezier(0.34, 1.56, 0.64, 1); /* satisfying pop   */
+  /* ── Transitions ──────────────────────────────────────────────────────
+     ease-standard/enter/exit: structural changes (open/close/navigate).
+     ease-premium: hover/focus on static interactive surfaces — a slower,
+     confident settle, distinct from ease-standard. */
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-enter:    cubic-bezier(0.0, 0.0, 0.2, 1);
+  --ease-exit:     cubic-bezier(0.4, 0.0, 1, 1);
+  --ease-spring:   cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-premium:  cubic-bezier(0.22, 1, 0.36, 1);   /* hover/focus signature curve */
 
   --duration-fast:   100ms;
   --duration-short:  150ms;
@@ -137,54 +144,49 @@
 
 }
 
-/* ── Dark mode token overrides ──────────────────────────────────────────── */
-/* Applied via class="dark" on <html>. app.html reads the OS preference and    */
-/* sets this pre-paint to avoid a flash.                                        */
+/* ── Dark mode token overrides — "Ink", the primary experience ─────────── */
 .dark {
-  --color-bg-base:        #0F1117;  /* deep off-black                */
-  --color-bg-elevated:    #181C27;  /* cards, inputs                 */
-  --color-bg-sunken:      #0B0E15;  /* inset sections                */
+  --color-bg-base:        #15130F;  /* Ink                               */
+  --color-bg-elevated:    #211D15;  /* Ledger — panels, the open spread  */
+  --color-bg-sunken:      #0F0D0A;  /* deeper than Ink — inset sections  */
   --color-bg-overlay:     rgba(0, 0, 0, 0.65);
 
-  --color-text-primary:   #F0F0EE;  /* warm off-white                */
-  --color-text-secondary: #9CA3AF;
-  --color-text-tertiary:  #6B7280;
-  --color-text-inverse:   #0F1117;
-  --color-border-base:    rgba(240, 240, 238, 0.08);
-  --color-border-strong:  rgba(240, 240, 238, 0.14);
+  --color-text-primary:   #F2ECDD;  /* Parchment                          */
+  --color-text-secondary: #B4A98F;
+  --color-text-tertiary:  #8C8068;
+  --color-text-inverse:   #1B1812;
+  --color-border-base:    rgba(242, 236, 221, 0.08);
+  --color-border-strong:  rgba(242, 236, 221, 0.16);
+  --color-border-focus:   #C89B3C;  /* full-brightness Brass reads on dark */
 
-  --color-accent:         #2DD4BF;  /* teal-400 — brighter on dark   */
-  --color-accent-hover:   #5EEAD4;  /* teal-300                      */
-  --color-accent-subtle:  rgba(45, 212, 191, 0.12);
-  --color-accent-text:    #CCFBF1;
+  --color-accent:         #C89B3C;  /* Brass                              */
+  --color-accent-strong:  #DCB75E;  /* lighter Brass — accent text, dark  */
+  --color-accent-subtle:  rgba(200, 155, 60, 0.14);
+  --color-accent-text:    #E8CE8C;
 
-  --color-status-new-bg:           rgba(51, 65, 85, 0.4);
-  --color-status-new-text:         #94A3B8;
-  --color-status-no-answer-bg:     rgba(120, 53, 15, 0.25);
-  --color-status-no-answer-text:   #FCD34D;
-  --color-status-interested-bg:    rgba(30, 64, 175, 0.2);
-  --color-status-interested-text:  #93C5FD;
-  --color-status-quoted-bg:        rgba(76, 29, 149, 0.2);
-  --color-status-quoted-text:      #C4B5FD;
-  --color-status-booked-bg:        rgba(20, 83, 45, 0.25);
-  --color-status-booked-text:      #86EFAC;
-  --color-status-not-int-bg:       rgba(127, 29, 29, 0.2);
-  --color-status-not-int-text:     #FCA5A5;
-  --color-status-callback-bg:      rgba(124, 45, 18, 0.2);
-  --color-status-callback-text:    #FDBA74;
+  --color-temp-cold-bg:      rgba(140, 128, 104, 0.16);
+  --color-temp-cold-text:    #B4A98F;
+  --color-temp-warming-bg:   rgba(184, 134, 43, 0.16);
+  --color-temp-warming-text: #E0B563;
+  --color-temp-warm-bg:      rgba(200, 155, 60, 0.16);
+  --color-temp-warm-text:    #E8CE8C;
+  --color-temp-won-bg:       rgba(124, 144, 112, 0.16);
+  --color-temp-won-text:     #A8C29A;
+  --color-temp-lost-bg:      rgba(168, 72, 59, 0.16);
+  --color-temp-lost-text:    #E0897A;
 
-  --color-warning-bg:    rgba(120, 53, 15, 0.2);
-  --color-warning-text:  #FCD34D;
-  --color-warning-icon:  #F59E0B;
-  --color-danger-bg:     rgba(127, 29, 29, 0.2);
-  --color-danger-text:   #FCA5A5;
-  --color-success-bg:    rgba(20, 83, 45, 0.2);
-  --color-success-text:  #86EFAC;
+  --color-warning-bg:    rgba(184, 134, 43, 0.16);
+  --color-warning-text:  #E0B563;
+  --color-warning-icon:  #D9A53E;
+  --color-danger-bg:     rgba(168, 72, 59, 0.16);
+  --color-danger-text:   #E0897A;
+  --color-success-bg:    rgba(124, 144, 112, 0.16);
+  --color-success-text:  #A8C29A;
 
   --shadow-xs:  0 1px 2px rgba(0, 0, 0, 0.3);
-  --shadow-sm:  0 1px 3px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.2);
-  --shadow-md:  0 4px 8px rgba(0, 0, 0, 0.35), 0 2px 4px rgba(0, 0, 0, 0.2);
-  --shadow-lg:  0 12px 24px rgba(0, 0, 0, 0.45), 0 4px 8px rgba(0, 0, 0, 0.2);
+  --shadow-sm:  0 2px 4px rgba(0, 0, 0, 0.35);
+  --shadow-md:  0 6px 16px rgba(0, 0, 0, 0.4);
+  --shadow-lg:  0 16px 32px rgba(0, 0, 0, 0.5);
 }
 
 /* ── Base layer ─────────────────────────────────────────────────────────── */
@@ -221,7 +223,7 @@
     outline: none;
   }
 
-  /* Phone numbers, dates, IDs use mono + tabular figures (§2). */
+  /* Phone numbers, dates, IDs, ledger row-numbers use mono + tabular figures (§2). */
   .tabular {
     font-variant-numeric: tabular-nums;
   }
@@ -237,21 +239,31 @@
     padding-inline: clamp(1rem, 4vw, 2rem);
   }
 
-  /* Fluid display type (§2). */
+  /* Fluid Fraunces headings (§2) — restraint: only above text-h4, never body. */
   .text-display {
-    font-size: clamp(1.875rem, 4vw + 0.5rem, 3rem);
+    font-family: var(--font-display);
+    font-size: clamp(1.875rem, 1.35rem + 2.6vw, 3rem);
     line-height: var(--leading-tight);
     letter-spacing: var(--tracking-tighter);
-    font-weight: 700;
+    font-weight: 680;
   }
   .text-h2 {
-    font-size: clamp(1.5rem, 3vw + 0.5rem, 2.375rem);
+    font-family: var(--font-display);
+    font-size: clamp(1.625rem, 1.25rem + 1.9vw, 2.375rem);
     line-height: var(--leading-tight);
     letter-spacing: var(--tracking-tighter);
-    font-weight: 700;
+    font-weight: 660;
   }
   .text-h3 {
-    font-size: clamp(1.25rem, 2vw + 0.5rem, 1.875rem);
+    font-family: var(--font-display);
+    font-size: clamp(1.375rem, 1.15rem + 1.1vw, 1.875rem);
+    line-height: var(--leading-snug);
+    letter-spacing: var(--tracking-tight);
+    font-weight: 640;
+  }
+  .text-h4 {
+    font-family: var(--font-display);
+    font-size: clamp(1.125rem, 1.0rem + 0.6vw, 1.5rem);
     line-height: var(--leading-snug);
     letter-spacing: var(--tracking-tight);
     font-weight: 600;
@@ -267,16 +279,7 @@
     color: var(--color-text-tertiary);
   }
 
-  /* Frosted glass — sticky nav + overlays only (§7).
-     NOTE: the spec wrote rgba(var(--color-bg-elevated), 0.85), which is invalid
-     because the token is a hex. color-mix is the valid token-respecting form. */
-  .glass {
-    backdrop-filter: blur(12px) saturate(180%);
-    -webkit-backdrop-filter: blur(12px) saturate(180%);
-    background-color: color-mix(in srgb, var(--color-bg-elevated) 82%, transparent);
-  }
-
-  /* Bottom tab bar — safe-area aware (§4). */
+  /* Bottom tab bar — flat panel, no blur (§5: a ledger is flat, not frosted glass). */
   .tab-bar {
     position: fixed;
     inset: auto 0 0 0;
@@ -284,12 +287,10 @@
     padding-bottom: env(safe-area-inset-bottom, 0px);
     height: calc(var(--tab-bar-height) + env(safe-area-inset-bottom, 0px));
     border-top: 1px solid var(--color-border-base);
-    backdrop-filter: blur(12px) saturate(180%);
-    -webkit-backdrop-filter: blur(12px) saturate(180%);
-    background-color: color-mix(in srgb, var(--color-bg-elevated) 85%, transparent);
+    background-color: var(--color-bg-elevated);
   }
 
-  /* Skeleton shimmer (§5/§6). */
+  /* Skeleton shimmer (§6). */
   .skeleton {
     background: linear-gradient(
       90deg,
@@ -302,7 +303,7 @@
     border-radius: var(--radius-md);
   }
 
-  /* Primary CTA button (§5). 48px min touch target. */
+  /* Primary CTA button (§5). 48px min touch target, ease-premium hover. */
   .btn-primary {
     display: inline-flex;
     align-items: center;
@@ -315,12 +316,12 @@
     font-size: 0.9375rem; /* 15px — per §5 button spec (no token at this size) */
     font-weight: 600;
     transition:
-      background-color var(--duration-short) var(--ease-standard),
+      background-color var(--duration-base) var(--ease-premium),
       transform var(--duration-fast) var(--ease-spring),
-      box-shadow var(--duration-short) var(--ease-standard);
+      box-shadow var(--duration-base) var(--ease-premium);
   }
   .btn-primary:hover {
-    background-color: var(--color-accent-hover);
+    background-color: color-mix(in srgb, var(--color-accent) 92%, var(--color-text-inverse) 8%);
     box-shadow: var(--shadow-sm);
   }
   .btn-primary:active {
@@ -331,7 +332,7 @@
     cursor: not-allowed;
   }
 
-  /* Form input (§5). 48px tall, accent focus ring. */
+  /* Form input (§5). 48px tall, low-opacity border, accent focus ring. */
   .input-field {
     width: 100%;
     height: 48px;
@@ -342,8 +343,8 @@
     font-size: var(--text-base);
     color: var(--color-text-primary);
     transition:
-      border-color var(--duration-short) var(--ease-standard),
-      box-shadow var(--duration-short) var(--ease-standard);
+      border-color var(--duration-base) var(--ease-premium),
+      box-shadow var(--duration-base) var(--ease-premium);
   }
   .input-field::placeholder {
     color: var(--color-text-tertiary);
@@ -361,24 +362,26 @@
   100% { background-position:  400px 0; }
 }
 
-@keyframes slideInRight {
-  from { transform: translateX(24px); opacity: 0; }
-  to   { transform: translateX(0);    opacity: 1; }
-}
-
 @keyframes fade-in {
   from { opacity: 0; }
   to   { opacity: 1; }
 }
 
-.page-enter {
-  animation: slideInRight var(--duration-medium) var(--ease-enter);
+@keyframes scan-sweep {
+  0%   { transform: translateY(-100%); opacity: 0; }
+  10%  { opacity: 1; }
+  90%  { opacity: 1; }
+  100% { transform: translateY(100%); opacity: 0; }
+}
+
+@keyframes pill-pulse {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.08); }
 }
 
 /* Respect reduced motion: drop non-essential animation. */
 @media (prefers-reduced-motion: reduce) {
   .skeleton { animation: none; }
-  .page-enter { animation: fade-in var(--duration-base) ease; }
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;

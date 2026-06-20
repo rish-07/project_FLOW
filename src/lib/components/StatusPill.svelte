@@ -25,18 +25,21 @@
     'not_interested',
     'callback'
   ];
-  const STATUS_TOKEN: Record<Status, string> = {
-    new: 'new',
-    no_answer: 'no-answer',
-    interested: 'interested',
-    quoted: 'quoted',
-    booked: 'booked',
-    not_interested: 'not-int',
-    callback: 'callback'
+
+  // Temperature mapping (design-system.md §3) — status is read as how close a
+  // lead is to closing, not an arbitrary category. cold -> warming -> warm -> won/lost.
+  const TEMP_TOKEN: Record<Status, string> = {
+    new: 'cold',
+    no_answer: 'warming',
+    callback: 'warming',
+    interested: 'warm',
+    quoted: 'warm',
+    booked: 'won',
+    not_interested: 'lost'
   };
   function tokenVars(s: Status): string {
-    const t = STATUS_TOKEN[s];
-    return `--pill-bg: var(--color-status-${t}-bg); --pill-text: var(--color-status-${t}-text);`;
+    const t = TEMP_TOKEN[s];
+    return `--pill-bg: var(--color-temp-${t}-bg); --pill-text: var(--color-temp-${t}-text);`;
   }
 
   let open = $state(false);
@@ -44,6 +47,20 @@
   let menuStyle = $state('');
   let triggerEl = $state<HTMLButtonElement>();
   let menuEl = $state<HTMLDivElement>();
+
+  // Brief scale pulse on status change (design-system.md §5) — the one
+  // moment a pill is allowed to move; at rest it never animates.
+  let pulsing = $state(false);
+  let pulseTimer: ReturnType<typeof setTimeout> | undefined;
+  let prevStatus = status;
+  $effect(() => {
+    if (status !== prevStatus) {
+      prevStatus = status;
+      pulsing = true;
+      clearTimeout(pulseTimer);
+      pulseTimer = setTimeout(() => (pulsing = false), 250);
+    }
+  });
 
   const MENU_WIDTH = 208;
   const OPTION_H = 40;
@@ -146,6 +163,7 @@
 <button
   bind:this={triggerEl}
   class="pill-trigger"
+  class:pulsing
   style={tokenVars(status)}
   type="button"
   aria-haspopup="listbox"
@@ -198,7 +216,7 @@
 <span class="sr-only" aria-live="polite">{STATUS_LABELS[status]}</span>
 
 <style>
-  /* Trigger — status pill (§5): h-6, px-2.5, radius-full, fixed in a 120px cell. */
+  /* Trigger — temperature pill (§5): h-6, px-2.5, radius-full, fixed in a 120px cell. */
   .pill-trigger {
     display: inline-flex;
     align-items: center;
@@ -213,6 +231,14 @@
     background-color: var(--pill-bg);
     color: var(--pill-text);
     cursor: pointer;
+    transition:
+      background-color var(--duration-base) var(--ease-standard),
+      color var(--duration-base) var(--ease-standard);
+  }
+  /* Structural change (status update), not a hover — ease-standard + the one
+     permitted moment of pill motion (design-system.md §5). */
+  .pill-trigger.pulsing {
+    animation: pill-pulse var(--duration-medium) var(--ease-spring);
   }
   .pill-label {
     flex: 1;
@@ -235,7 +261,7 @@
     background-color: currentColor;
   }
 
-  /* Menu — elevation 3 (§5), portaled + fixed so it escapes clipping. */
+  /* Menu — elevation 4 (§7), low-opacity border (§1B), portaled + fixed. */
   .menu {
     position: fixed;
     z-index: 60;
@@ -259,8 +285,9 @@
     color: var(--color-text-primary);
     background-color: transparent;
     cursor: pointer;
+    transition: background-color var(--duration-base) var(--ease-premium);
   }
-  /* dot inside an option carries that status's colour */
+  /* dot inside an option carries that status's temperature colour */
   .option .dot {
     color: var(--pill-text);
   }
@@ -291,5 +318,11 @@
     clip: rect(0, 0, 0, 0);
     white-space: nowrap;
     border: 0;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .pill-trigger.pulsing {
+      animation: none;
+    }
   }
 </style>
