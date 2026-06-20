@@ -1,13 +1,21 @@
 <script lang="ts">
   import '../app.css';
+  import { onMount } from 'svelte';
   import { page } from '$app/stores';
   import { goto } from '$app/navigation';
   import TabBar from '$lib/components/TabBar.svelte';
+  import ThemeToggle from '$lib/components/ThemeToggle.svelte';
   import OverlayHost from '$lib/components/OverlayHost.svelte';
   import DropZone from '$lib/components/DropZone.svelte';
+  import { initTheme } from '$lib/stores/theme.svelte';
   import { authClient } from '$lib/auth-client';
 
   let { children } = $props();
+
+  // Sync the theme store with the pre-paint class + persisted choice, and keep
+  // "System" following the OS while it's selected. Pre-paint already set the
+  // class, so this never causes a flash — it only seeds reactive state.
+  onMount(() => initTheme());
 
   // /login and /setup are standalone full-screen routes — they render outside
   // the bottom-tab app shell (no tab bar, no account bar).
@@ -25,6 +33,7 @@
 {:else}
   <div class="min-h-dvh">
     <header class="account-bar container-app">
+      <ThemeToggle />
       <button class="signout-btn" type="button" onclick={signOut}>
         <svg
           class="h-5 w-5"
@@ -63,6 +72,7 @@
     display: flex;
     justify-content: flex-end;
     align-items: center;
+    gap: var(--spacing-2);
     padding-top: calc(env(safe-area-inset-top, 0px) + var(--spacing-1));
     padding-bottom: var(--spacing-1);
   }

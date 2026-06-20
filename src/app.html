@@ -17,13 +17,17 @@
       rel="stylesheet"
     />
 
-    <!-- Pre-paint theme: read the OS preference and set `.dark` before first
-         paint so there is no flash of the wrong theme. -->
+    <!-- Pre-paint theme: set `.dark` before first paint so there is no flash.
+         Mirrors src/lib/stores/theme.svelte.ts — keep the key + logic in sync:
+         a stored 'dark'/'light' is forced; 'system' or absent follows the OS. -->
     <script>
       try {
-        if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-          document.documentElement.classList.add('dark');
-        }
+        var p = localStorage.getItem('theme-pref');
+        var dark =
+          p === 'dark' ||
+          ((p === null || p === 'system') &&
+            window.matchMedia('(prefers-color-scheme: dark)').matches);
+        document.documentElement.classList.toggle('dark', dark);
       } catch (e) {}
     </script>
 
