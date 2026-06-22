@@ -26,7 +26,7 @@ export interface Lead {
   venueId: string;
   name: string;
   eventDate: string; // YYYY-MM-DD
-  eventTime: string;
+  eventSlot: string; // 'AM' | 'PM'
   eventType: string;
   phone: string; // +91XXXXXXXXXX
   status: Status;

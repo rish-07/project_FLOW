@@ -1,70 +1,59 @@
-# Gemini extraction prompt (optimised)
+# Task — Vendor Diary Booking Extraction
 
-This is the production prompt for reading a vendor's diary-page photo and returning structured booking data. Send it as the text part alongside the image part in a single `generateContent` call, with `responseMimeType: 'application/json'`.
+You read a photograph of one page from an event vendor's physical booking diary and extract every booking on it as structured data for an event organiser's CRM.
 
-Model: `gemini-2.5-flash`. Temperature: `0` (deterministic extraction — set in config if exposed).
+## Reference Anchor Date
 
----
+Today's date (IST) is: {{ANCHOR_DATE}}
 
-## The prompt (use verbatim)
+Treat this value as "today" whenever a rule depends on the current date. Do not use any other notion of the current date.
 
-```
-You read a photograph of a single page from an event vendor's physical booking diary and return the bookings on it as structured JSON.
+## Input Characteristics
 
-The page has PRINTED date headers or slot labels. The bookings are HANDWRITTEN underneath them. Handwriting may mix English, Hindi, Telugu, and Hinglish — read all of them. One page usually holds several bookings.
+The page has PRINTED date headers or slot labels, with bookings HANDWRITTEN beneath them. Handwriting is often messy or cursive and may mix English, Hindi, Telugu, and Hinglish — read all of them. A single page usually contains several bookings. Reason carefully through each entry before assigning its fields.
 
-## What to extract
-Return a JSON array. One object per booking. Each object has exactly these keys:
+## Fields To Extract
 
-- "customer_name": string. The customer's name as written.
-- "event_type": one of "Marriage", "Engagement", "Reception", "Sangeet", "Birthday", "Other". Map synonyms (e.g. "wedding" → "Marriage", "bday" → "Birthday"). If genuinely unclear, use "Other".
-- "event_date": string, "YYYY-MM-DD". Take the date from the PRINTED slot the entry sits under. If only day+month are visible, choose the year that makes the date the NEXT upcoming occurrence (never a past date relative to today). If the date is fully illegible, use "" and set its confidence low.
-- "event_time": string, exactly as written (e.g. "7:30 PM", "morning", "evening", "11 am"). Use "" if absent.
-- "phone_primary": string, normalised to "+91XXXXXXXXXX". Rules: keep the last 10 digits; drop a leading 0 or 91 or +91; strip spaces, dashes, brackets. If you cannot recover 10 clean digits, use "" and set confidence low — do NOT invent digits.
-- "phone_secondary": string in the same format, or null. Diary entries sometimes list two numbers separated by "/", ",", or "alt".
-- "confidence": object with numeric 0–1 scores for EVERY field: "customer_name", "event_type", "event_date", "event_time", "phone_primary", "phone_secondary". Score honestly. Any digit or letter you are guessing pulls the score below 0.7. Clear, unambiguous handwriting scores above 0.9. For a field that is legitimately absent (e.g. no second number, no time written), score 1.0 — you are confident it is empty.
+Return one object per booking with these keys:
 
-## Rules
-- Extract EVERY legible booking. Do not stop at the first.
-- SKIP entries that are struck through, crossed out, or marked "cancelled"/"cancel"/"rejected".
+- customer_name — the customer's name as written.
+- event_type — one of: Marriage, Engagement, Reception, Sangeet, Birthday, Other. Map synonyms (e.g. "wedding" maps to Marriage, "bday" maps to Birthday). If genuinely unclear, use Other.
+- event_date — format YYYY-MM-DD, taken from the PRINTED slot the entry sits under. If only day and month are visible, choose the year that makes the date the next upcoming occurrence relative to the Reference Anchor Date above — never a date in the past. If the date is fully illegible, use an empty string and score its confidence low.
+- event_slot — "AM" or "PM" (see Event Slot rules below).
+- phone_primary — the main phone number, normalised to +91XXXXXXXXXX. Keep the last 10 digits; drop a leading 0, 91, or +91; strip spaces, dashes, and brackets. If you cannot recover 10 clean digits, use an empty string and score its confidence low. Never guess missing digits.
+- phone_secondary — a second number in the same format if present, otherwise null. Two numbers may be separated by "/", ",", or "alt".
+- confidence — an object with numeric scores from 0 to 1 for customer_name, event_type, event_date, phone_primary, and event_slot.
+
+## Event Slot (AM or PM)
+
+Convention halls rent only two slots: morning (AM, 5 AM–4 PM) and evening (PM, 5 PM–2 AM). Every booking is exactly one of these. Determine event_slot as follows:
+
+1. Position is the primary signal. The diary page is split horizontally: entries in the TOP half of the page are morning (AM); entries in the BOTTOM half are evening (PM).
+2. If an explicit time is written for an entry, map it to its slot (5 AM–4 PM is AM, 5 PM–2 AM is PM). If a written time conflicts with the entry's position, prefer the written time and lower the event_slot confidence.
+3. For entries near the vertical middle of the page where the half is ambiguous, score event_slot confidence below 0.7.
+
+## Extraction Rules
+
+- Extract every legible booking on the page; do not stop after the first.
+- Skip any entry that is struck through, crossed out, or marked cancelled, cancel, or rejected.
 - Never merge two bookings into one, and never split one booking into two.
-- Never fabricate a field. Missing → "" or null, with low confidence where a confidence score applies.
-- If the page contains no bookings (blank page, unrelated photo), return [].
-- Output ONLY the JSON array. No markdown fences, no comments, no trailing text.
+- Never fabricate a value. A missing field is an empty string or null, with low confidence where a confidence score applies.
+- If the page contains no bookings, return an empty array.
 
-## Example output
+## Confidence Scoring
+
+Score honestly. A digit or letter you are inferring or guessing pulls the relevant score below 0.7. Clear, unambiguous handwriting scores above 0.9. An event_slot inferred only from page position (with no written time) should rarely score above 0.85. A downstream confirm step relies on these scores to flag fields for human review, so accuracy here matters more than optimism.
+
+## Example (illustrative shape only)
+
 [
   {
     "customer_name": "Ravi Kumar",
     "event_type": "Marriage",
     "event_date": "2026-11-23",
-    "event_time": "7:00 PM",
+    "event_slot": "AM",
     "phone_primary": "+919876543210",
-    "phone_secondary": "+918765432109",
-    "confidence": { "customer_name": 0.96, "event_type": 0.9, "event_date": 0.92, "event_time": 0.88, "phone_primary": 0.74, "phone_secondary": 0.7 }
+    "phone_secondary": null,
+    "confidence": { "customer_name": 0.96, "event_type": 0.90, "event_date": 0.92, "phone_primary": 0.74, "event_slot": 0.80 }
   }
 ]
-```
-
----
-
-## Why it's built this way
-
-- **Explicit schema + "exactly these keys"** keeps the output stable so your Zod parse never drifts.
-- **Date inference rule** handles the common case where the diary slot shows only day/month — it resolves to the next future date instead of guessing a wrong year. The model has no clock, so `extractBookings` appends today's IST date to the prompt at call time to anchor "next upcoming occurrence".
-- **Phone normalisation rules** cover the real variants you'll see in India: leading `0`, `91`, `+91`, spaces, two numbers in one cell.
-- **"Never fabricate" + honest confidence** is the safety mechanism. The confirm screen keys off `confidence < 0.75` to flag fields, so the model must be willing to say "I'm unsure" rather than inventing a plausible phone number.
-- **Skip cancelled entries** stops struck-through bookings from polluting the call list.
-- **Return []** prevents a crash when she accidentally uploads a non-diary photo.
-
-## Validation (already in `$lib/gemini.ts`)
-
-After the call, strip any stray ```` ```json ```` fences, `JSON.parse`, then validate with the Zod schema. If validation throws, return a clean error so the UI can ask her to retake the photo — never save unvalidated data.
-
-## Tuning later
-
-If accuracy on real photos is off, in order of impact:
-1. Add 1–2 *few-shot image+JSON pairs* from her actual vendors' diaries (most effective).
-2. Lower temperature to 0 if not already.
-3. If a specific vendor's layout confuses it, add a one-line hint to the prompt for that layout (passed per-vendor).
-4. Only if Flash plateaus on bad handwriting, try `gemini-2.5-pro` for that fallback — slower and pricier, so route to it only on low-confidence pages.

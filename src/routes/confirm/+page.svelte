@@ -13,7 +13,7 @@
     customerName: string;
     eventType: string;
     eventDate: string;
-    eventTime: string;
+    eventSlot: 'AM' | 'PM';
     phonePrimary: string;
     phoneSecondary: string;
     notes: string;
@@ -30,7 +30,8 @@
   $effect(() => {
     if (!hydrated) {
       hydrated = true;
-      cards = data.leads.map((l) => ({ ...l }));
+      // Narrow the slot to the AM/PM union the toggle binds to.
+      cards = data.leads.map((l) => ({ ...l, eventSlot: l.eventSlot === 'PM' ? 'PM' : 'AM' }));
     }
   });
 
@@ -83,9 +84,16 @@
   </EmptyState>
 {:else}
   <div class="confirm-screen">
-    {#if data.sourceImageKey}
-      <div class="photo-wrap">
-        <img class="source-photo" src={`/api/photos/${data.sourceImageKey}`} alt="The diary page you uploaded" />
+    {#if data.sourceImageKeys.length}
+      <div class="photo-rail" role="group" aria-label="Uploaded diary pages">
+        {#each data.sourceImageKeys as key, i (key)}
+          <img
+            class="source-photo"
+            src={`/api/photos/${key}`}
+            alt={data.sourceImageKeys.length > 1 ? `Diary page ${i + 1}` : 'The diary page you uploaded'}
+            loading="lazy"
+          />
+        {/each}
       </div>
     {/if}
 
@@ -131,8 +139,34 @@
             </div>
 
             <div class="field">
-              <span class="field-label">Event time {#if lowConfidence(c, 'event_time')}{@render warnChip()}{/if}</span>
-              <input class="input-field" type="text" placeholder="e.g. Evening, 7:30 PM" bind:value={c.eventTime} />
+              <span class="field-label">Event slot {#if lowConfidence(c, 'event_slot')}{@render warnChip()}{/if}</span>
+              <div
+                class="slot-toggle"
+                class:flagged={lowConfidence(c, 'event_slot')}
+                role="radiogroup"
+                aria-label={`Event slot for booking ${i + 1}`}
+              >
+                <button
+                  type="button"
+                  role="radio"
+                  class="slot-opt"
+                  class:active={c.eventSlot === 'AM'}
+                  aria-checked={c.eventSlot === 'AM'}
+                  onclick={() => (c.eventSlot = 'AM')}
+                >
+                  AM
+                </button>
+                <button
+                  type="button"
+                  role="radio"
+                  class="slot-opt"
+                  class:active={c.eventSlot === 'PM'}
+                  aria-checked={c.eventSlot === 'PM'}
+                  onclick={() => (c.eventSlot = 'PM')}
+                >
+                  PM
+                </button>
+              </div>
             </div>
 
             <div class="field">
@@ -197,22 +231,37 @@
     gap: var(--spacing-3);
   }
 
-  /* ── Source photo (sticky reference) ───────────────────────────── */
-  .photo-wrap {
+  /* ── Source photos (sticky reference rail — all pages in the batch) ─── */
+  .photo-rail {
     position: sticky;
     top: 0;
     z-index: 10;
+    display: flex;
+    gap: var(--spacing-1);
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
     padding-block: var(--spacing-2);
     background-color: var(--color-bg-base);
+    scroll-snap-type: x proximity;
   }
   .source-photo {
-    display: block;
-    width: 100%;
-    max-height: 32vh;
+    flex: 0 0 auto;
+    height: clamp(9rem, 28vh, 18rem);
+    width: auto;
+    max-width: 86%;
     object-fit: contain;
     background-color: var(--color-bg-sunken);
     border: 1px solid var(--color-border-base);
     border-radius: var(--radius-lg);
+    scroll-snap-align: start;
+  }
+  /* A single page fills the width as before; only a real batch scrolls. */
+  .photo-rail:has(.source-photo:only-child) .source-photo {
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+    max-height: clamp(9rem, 28vh, 18rem);
   }
 
   .intro-title {
@@ -313,6 +362,47 @@
     line-height: var(--leading-normal);
   }
 
+  /* ── AM/PM slot toggle (replaces the free-text time input) ─────── */
+  .slot-toggle {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 3px;
+    height: 48px;
+    padding: 3px;
+    border: 1px solid var(--color-border-strong);
+    border-radius: var(--radius-md);
+    background-color: var(--color-bg-elevated);
+    transition: border-color var(--duration-base) var(--ease-premium);
+  }
+  /* Amber when event_slot confidence is low — mirrors the warn chip. */
+  .slot-toggle.flagged {
+    border-color: var(--color-warning-icon);
+    background-color: var(--color-warning-bg);
+  }
+  .slot-opt {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-sm);
+    font-family: var(--font-mono);
+    font-size: var(--text-sm);
+    font-weight: 600;
+    letter-spacing: var(--tracking-wide);
+    color: var(--color-text-secondary);
+    background-color: transparent;
+    cursor: pointer;
+    transition:
+      color var(--duration-base) var(--ease-premium),
+      background-color var(--duration-base) var(--ease-premium);
+  }
+  .slot-opt:hover:not(.active) {
+    color: var(--color-text-primary);
+  }
+  .slot-opt.active {
+    color: var(--color-accent-text);
+    background-color: var(--color-accent-subtle);
+  }
+
   /* ── Amber double-check chip (§3 / §5) ─────────────────────────── */
   .chip-warn {
     display: inline-flex;
@@ -334,7 +424,9 @@
   /* ── Sticky save bar (above the tab bar) ───────────────────────── */
   .save-bar {
     position: sticky;
-    bottom: calc(var(--tab-bar-height) + env(safe-area-inset-bottom, 0px) + var(--spacing-1));
+    /* Tab bar is in normal flow now, so the save bar sticks to the viewport
+       bottom; the bar appears below it once you scroll to the end. */
+    bottom: 0;
     z-index: 20;
     display: flex;
     flex-direction: column;

@@ -231,12 +231,16 @@
 
 /* ── Component primitives ───────────────────────────────────────────────── */
 @layer components {
-  /* Responsive content container (§4). */
+  /* Responsive content container (§4). Horizontal gutter is safe-area aware:
+     env() insets are 0 on normal screens, so the clamp() gutter wins; under a
+     notch/rounded corner in landscape the inset wins and content never slides
+     under the cutout (§5 safe-area-awareness). */
   .container-app {
     width: 100%;
     max-width: 1280px;
     margin-inline: auto;
-    padding-inline: clamp(1rem, 4vw, 2rem);
+    padding-left: max(clamp(1rem, 4vw, 2rem), env(safe-area-inset-left, 0px));
+    padding-right: max(clamp(1rem, 4vw, 2rem), env(safe-area-inset-right, 0px));
   }
 
   /* Fluid Fraunces headings (§2) — restraint: only above text-h4, never body. */
@@ -279,11 +283,12 @@
     color: var(--color-text-tertiary);
   }
 
-  /* Bottom tab bar — flat panel, no blur (§5: a ledger is flat, not frosted glass). */
+  /* Bottom tab bar — normal document flow at the end of the app shell (§5).
+     It is NOT fixed: the shell is a flex column with `main` growing to fill, so
+     the bar rests at the viewport bottom on short pages and sits after the
+     content on long ones. A hairline top rule is its only separation (a ledger
+     is flat); safe-area padding keeps it clear of the home indicator. */
   .tab-bar {
-    position: fixed;
-    inset: auto 0 0 0;
-    z-index: 40;
     padding-bottom: env(safe-area-inset-bottom, 0px);
     height: calc(var(--tab-bar-height) + env(safe-area-inset-bottom, 0px));
     border-top: 1px solid var(--color-border-base);

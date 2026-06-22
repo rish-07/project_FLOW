@@ -10,7 +10,7 @@ type KeptLead = {
   customerName: string;
   eventType: string;
   eventDate: string;
-  eventTime: string;
+  eventSlot: string;
   phonePrimary: string;
   phoneSecondary: string;
   notes: string;
@@ -26,15 +26,21 @@ export const load: PageServerLoad = async ({ url, platform }) => {
     .from(leads)
     .where(and(eq(leads.sessionId, sessionId), eq(leads.isConfirmed, false)));
 
+  // Every page in a batch shares this session; surface all of their source
+  // photos (distinct, in row order) so the confirm screen can show the whole set.
+  const sourceImageKeys = [
+    ...new Set(rows.map((r) => r.sourceImageKey).filter((k): k is string => !!k))
+  ];
+
   return {
     sessionId,
-    sourceImageKey: rows[0]?.sourceImageKey ?? null,
+    sourceImageKeys,
     leads: rows.map((r) => ({
       id: r.id,
       customerName: r.customerName,
       eventType: r.eventType,
       eventDate: r.eventDate,
-      eventTime: r.eventTime,
+      eventSlot: r.eventSlot,
       phonePrimary: r.phonePrimary,
       phoneSecondary: r.phoneSecondary ?? '',
       notes: r.notes ?? '',
@@ -90,7 +96,7 @@ export const actions: Actions = {
           customerName: l.customerName.trim(),
           eventType: l.eventType.trim(),
           eventDate: l.eventDate.trim(),
-          eventTime: l.eventTime?.trim() ?? '',
+          eventSlot: l.eventSlot === 'PM' ? 'PM' : 'AM',
           phonePrimary: primary,
           phoneSecondary: secondary,
           notes: l.notes?.trim() || null,

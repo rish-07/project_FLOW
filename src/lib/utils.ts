@@ -30,6 +30,12 @@ export function humanDate(iso: string): string {
   return d.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' });
 }
 
+/** 'YYYY-MM-DD' + 'AM'|'PM' -> 'Mon 23 Nov · AM'. Slot omitted if empty. */
+export function formatDateSlot(iso: string, slot: string): string {
+  const d = humanDate(iso);
+  return slot ? `${d} · ${slot}` : d;
+}
+
 /**
  * Today's date as 'YYYY-MM-DD' in IST — the app's only timezone.
  * IST is a fixed UTC+5:30 with no DST, so shifting the epoch by 5.5h and reading
@@ -45,7 +51,7 @@ export type Confidence = {
   customer_name: number;
   event_type: number;
   event_date: number;
-  event_time: number;
+  event_slot: number;
   phone_primary: number;
   phone_secondary: number;
 };

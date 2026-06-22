@@ -66,7 +66,7 @@ export const leads = sqliteTable('leads', {
   customerName: text('customer_name').notNull(),
   eventType: text('event_type').notNull(),
   eventDate: text('event_date').notNull(),
-  eventTime: text('event_time').notNull().default(''),
+  eventSlot: text('event_slot').notNull(), // 'AM' | 'PM'
   phonePrimary: text('phone_primary').notNull(),
   phoneSecondary: text('phone_secondary'),
   status: text('status').notNull().default('new'),

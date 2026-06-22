@@ -31,7 +31,7 @@
 {#if isAuthRoute}
   {@render children?.()}
 {:else}
-  <div class="min-h-dvh">
+  <div class="app-shell">
     <header class="account-bar container-app">
       <ThemeToggle />
       <button class="signout-btn" type="button" onclick={signOut}>
@@ -96,11 +96,19 @@
     color: var(--color-text-primary);
   }
 
-  /* Keep content clear of the fixed bottom tab bar (tab-bar-height + safe area). */
+  /* Sticky-footer shell: the tab bar lives in normal document flow at the end.
+     `main` grows to fill the viewport, so on short pages the bar rests at the
+     bottom (like the empty states) and on long pages it sits right after the
+     content — no fixed overlay, no dead void above a floating bar. */
+  .app-shell {
+    display: flex;
+    flex-direction: column;
+    min-height: 100dvh;
+  }
+
   main {
+    flex: 1;
     padding-top: var(--spacing-2);
-    padding-bottom: calc(
-      var(--tab-bar-height) + env(safe-area-inset-bottom, 0px) + var(--spacing-3)
-    );
+    padding-bottom: var(--spacing-3);
   }
 </style>

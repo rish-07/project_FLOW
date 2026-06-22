@@ -13,9 +13,18 @@ export const POST: RequestHandler = async ({ request, platform, locals }) => {
   const form = await request.formData();
   const file = form.get('file');
   const venueId = form.get('venue_id');
+  const sessionParam = form.get('session_id');
 
   if (!(file instanceof File) || typeof venueId !== 'string') {
     throw error(400, 'Missing file or venue_id');
+  }
+
+  // A batch upload sends one shared session_id with every image so all their
+  // bookings land on the same confirm screen. Single-file callers may omit it
+  // and we mint one. Validate the shape — it becomes a DB key tying rows.
+  const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (sessionParam !== null && (typeof sessionParam !== 'string' || !UUID_RE.test(sessionParam))) {
+    throw error(400, 'Invalid session_id');
   }
 
   // Guard the Gemini call: reject non-images and oversized uploads before we pay
@@ -31,8 +40,10 @@ export const POST: RequestHandler = async ({ request, platform, locals }) => {
 
   const buffer = await file.arrayBuffer();
   const mimeType = file.type || 'image/jpeg';
-  const imageKey = `diary-photos/${venueId}/${Date.now()}.jpg`;
-  const sessionId = crypto.randomUUID();
+  // Suffix a random token: a batch puts several files under one venue in the
+  // same millisecond, so Date.now() alone would collide and overwrite in R2.
+  const imageKey = `diary-photos/${venueId}/${Date.now()}-${crypto.randomUUID().slice(0, 8)}.jpg`;
+  const sessionId = sessionParam ?? crypto.randomUUID();
 
   // Sweep abandoned uploads on the way in. Cheap, single-user; never blocks the
   // response (and never fails it). See $lib/cleanup for the retention policy.
@@ -64,13 +75,16 @@ export const POST: RequestHandler = async ({ request, platform, locals }) => {
     extracted.map((b) => {
       const primary = normalisePhone(b.phone_primary);
       const secondary = b.phone_secondary ? normalisePhone(b.phone_secondary) : '';
+      // Gemini scores customer_name, event_date, phone_primary, event_slot.
+      // phone_secondary isn't model-scored: synthesise a flag-worthy value so the
+      // confirm screen still cautions on a second number it couldn't clean up.
       const confidence = {
-        ...b.confidence,
+        customer_name: b.confidence.customer_name,
+        event_type: b.confidence.event_type,
+        event_date: b.confidence.event_date,
+        event_slot: b.confidence.event_slot,
         phone_primary: primary ? b.confidence.phone_primary : Math.min(b.confidence.phone_primary, 0.3),
-        phone_secondary:
-          !b.phone_secondary || secondary
-            ? b.confidence.phone_secondary
-            : Math.min(b.confidence.phone_secondary, 0.3)
+        phone_secondary: !b.phone_secondary ? 1 : secondary ? 0.9 : 0.3
       };
 
       return {
@@ -79,7 +93,7 @@ export const POST: RequestHandler = async ({ request, platform, locals }) => {
         customerName: b.customer_name,
         eventType: b.event_type,
         eventDate: b.event_date,
-        eventTime: b.event_time,
+        eventSlot: b.event_slot,
         phonePrimary: primary || b.phone_primary,
         phoneSecondary: b.phone_secondary ? secondary || b.phone_secondary : null,
         sourceImageKey: imageKey,

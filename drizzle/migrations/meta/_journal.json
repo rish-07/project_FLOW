@@ -8,6 +8,13 @@
       "when": 1781282551337,
       "tag": "0000_fat_black_knight",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1781300000000,
+      "tag": "0001_event_slot",
+      "breakpoints": true
     }
   ]
 }

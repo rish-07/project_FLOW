@@ -488,18 +488,35 @@ Column gap:      24px
 }
 ```
 
-### Bottom tab bar (mobile — safe area aware)
+### Bottom tab bar (safe area aware, normal document flow)
+
+The bar lives in **normal flow** at the end of a sticky-footer shell — it is not
+fixed. The app shell is a flex column (`min-height: 100dvh`) with `main` set to
+`flex: 1`, so on short pages the bar rests at the viewport bottom (matching the
+empty states) and on long pages it sits right after the content. A hairline top
+rule is its only separation — a ledger is flat, and since the bar no longer
+floats over content there's no layering cue to justify a blur or shadow. Keep
+safe-area padding so the bar clears the home indicator.
 
 ```css
+.app-shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+}
+main { flex: 1; }
+
 .tab-bar {
-  position: fixed;
-  bottom: 0; left: 0; right: 0;
   padding-bottom: env(safe-area-inset-bottom, 0px);
   height: calc(64px + env(safe-area-inset-bottom, 0px));
-  background: var(--color-bg-elevated);
   border-top: 1px solid var(--color-border-base);
+  background-color: var(--color-bg-elevated);
 }
 ```
+
+Because the bar is in flow (not overlaying), screens no longer reserve
+`tab-bar-height` bottom padding. A sticky in-page action (e.g. the confirm save
+bar) uses `bottom: 0` and the tab bar appears below it once scrolled to the end.
 
 ---
 
@@ -775,6 +792,10 @@ elevation shadows. Reserve actual shadow for things that float above the page:
 | 3 — Card | Secondary content (confirm cards, call cards) | `bg-elevated`, `border-base`, `shadow-xs` |
 | 4 — Floating | Dropdown menus, popovers | `bg-elevated`, `border-strong`, `shadow-md` |
 | 5 — Overlay | Modals, sheets, toasts | `shadow-lg`, no border |
+
+The bottom tab bar holds to "a ledger is flat": it sits in normal document flow
+(sticky-footer shell, see §5), separated by a hairline top rule only — no blur,
+no shadow, because it never floats over content.
 
 ---
 
