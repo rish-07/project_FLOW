@@ -1,5 +1,6 @@
 <script lang="ts">
   import { slide } from 'svelte/transition';
+  import { invalidateAll } from '$app/navigation';
   import EmptyState from '$lib/components/EmptyState.svelte';
   import {
     humanDate,
@@ -86,6 +87,9 @@
       if (!res.ok) throw new Error();
       flashSaved(c.id);
       maybeRemove(c.id);
+      // Keep the Leads dashboard (status, counts) in sync — SvelteKit caches
+      // loads between routes, so without this Leads would show stale status.
+      invalidateAll();
     } catch {
       const i = items.findIndex((x) => x.id === c.id);
       if (i !== -1) items[i] = { ...items[i], ...prev };

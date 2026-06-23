@@ -8,6 +8,9 @@ node_modules
 /build
 /.svelte-kit
 /package
+/.agents
+/.claude
+/superpowers
 .env
 .env.*
 !.env.example

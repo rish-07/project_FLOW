@@ -1,4 +1,4 @@
-import { asc, eq } from 'drizzle-orm';
+import { and, asc, eq, ne } from 'drizzle-orm';
 import { createDb } from '$lib/server/db';
 import { venues, leads } from '$lib/server/db/schema';
 import type { PageServerLoad } from './$types';
@@ -8,26 +8,44 @@ export const load: PageServerLoad = async ({ platform }) => {
 
   const venueRows = await db.select().from(venues).orderBy(asc(venues.name));
 
-  // Header counts only (total confirmed leads + callback follow-ups per venue).
-  // Single-user, low volume — compute in memory rather than per-venue queries.
-  const confirmed = await db
-    .select({ venueId: leads.venueId, status: leads.status })
+  // Confirmed leads, soonest event first. 'not_interested' is excluded — those
+  // are closed-lost and the owner doesn't want them cluttering the dashboard, so
+  // marking a lead not interested effectively archives it off these tables.
+  // Single-user, low volume — group in memory rather than a query per venue.
+  const leadRows = await db
+    .select()
     .from(leads)
-    .where(eq(leads.isConfirmed, true));
+    .where(and(eq(leads.isConfirmed, true), ne(leads.status, 'not_interested')))
+    .orderBy(asc(leads.eventDate));
 
-  const totals = new Map<string, number>();
-  const followUps = new Map<string, number>();
-  for (const l of confirmed) {
-    totals.set(l.venueId, (totals.get(l.venueId) ?? 0) + 1);
-    if (l.status === 'callback') followUps.set(l.venueId, (followUps.get(l.venueId) ?? 0) + 1);
+  // Map DB columns to the leads-page shape (name/phone), grouped by venue.
+  const leadsByVenue: Record<string, ReturnType<typeof toLead>[]> = {};
+  for (const v of venueRows) leadsByVenue[v.id] = [];
+  for (const r of leadRows) {
+    (leadsByVenue[r.venueId] ??= []).push(toLead(r));
   }
 
   return {
     venues: venueRows.map((v) => ({
       id: v.id,
       name: v.name,
-      count: totals.get(v.id) ?? 0,
-      followUps: followUps.get(v.id) ?? 0
-    }))
+      count: leadsByVenue[v.id]?.length ?? 0,
+      followUps: (leadsByVenue[v.id] ?? []).filter((l) => l.status === 'callback').length
+    })),
+    leadsByVenue
   };
 };
+
+function toLead(r: typeof leads.$inferSelect) {
+  return {
+    id: r.id,
+    venueId: r.venueId,
+    name: r.customerName,
+    eventDate: r.eventDate,
+    eventSlot: r.eventSlot,
+    eventType: r.eventType,
+    phone: r.phonePrimary,
+    status: r.status,
+    notes: r.notes
+  };
+}

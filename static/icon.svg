@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="512" height="512">
+  <!--
+    PWA app icon — opaque, self-contained ledger mark (brass spine + parchment
+    rules on an Ink tile). Full-bleed square: the OS applies its own rounding,
+    and it has no transparent corners so it works as a maskable icon too.
+    Source for icon-192.png / icon-512.png / apple-touch-icon.png.
+  -->
+  <rect width="32" height="32" fill="#15130F" />
+  <rect x="7" y="8" width="2.5" height="16" rx="1.25" fill="#C89B3C" />
+  <rect x="12.5" y="10.1" width="12" height="1.8" rx="0.9" fill="#F2ECDD" />
+  <rect x="12.5" y="15.1" width="12" height="1.8" rx="0.9" fill="#F2ECDD" />
+  <rect x="12.5" y="20.1" width="8.5" height="1.8" rx="0.9" fill="#F2ECDD" />
+</svg>

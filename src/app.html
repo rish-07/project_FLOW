@@ -7,7 +7,17 @@
       name="viewport"
       content="width=device-width, initial-scale=1, viewport-fit=cover"
     />
-    <meta name="theme-color" content="#15130F" />
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#F2ECDD" />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#15130F" />
+
+    <!-- PWA: installable, full-screen standalone. %sveltekit.assets% keeps every
+         path base-correct on Cloudflare Pages subdomains. -->
+    <link rel="manifest" href="%sveltekit.assets%/manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="%sveltekit.assets%/apple-touch-icon.png" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Bookings" />
 
     <!-- Fonts: Fraunces (display) + Inter (body) + JetBrains Mono (data). design-system.md §2 -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { goto } from '$app/navigation';
+  import { goto, invalidateAll } from '$app/navigation';
   import { fly, fade } from 'svelte/transition';
   import { flip } from 'svelte/animate';
   import {
@@ -24,16 +24,36 @@
     goto(venueId ? `/upload?venue=${venueId}` : '/upload');
   }
 
-  // ── Mock store data (interim, pending real wiring) ──────────────────────
-  const MOCK_TEMPLATES: Omit<Lead, 'id' | 'venueId'>[] = [
-    { name: 'Priya Sharma', eventDate: '2026-07-12', eventSlot: 'PM', eventType: 'Marriage', phone: '+919876543210', status: 'new', notes: null },
-    { name: 'Rajesh Kumar', eventDate: '2026-08-03', eventSlot: 'PM', eventType: 'Reception', phone: '+919812345678', status: 'no_answer', notes: 'Tried twice, no response yet' },
-    { name: 'Anjali Mehta', eventDate: '2026-09-15', eventSlot: 'AM', eventType: 'Engagement', phone: '+919900112233', status: 'interested', notes: 'Wants a quote for 250 guests' },
-    { name: 'Vikram Singh', eventDate: '2026-07-28', eventSlot: 'PM', eventType: 'Sangeet', phone: '+919765432100', status: 'quoted', notes: 'Sent the 1.2L package' },
-    { name: 'Deepa & Arjun', eventDate: '2026-10-05', eventSlot: 'AM', eventType: 'Marriage', phone: '+919811122233', status: 'booked', notes: 'Advance paid' },
-    { name: 'Suresh Rao', eventDate: '2026-08-20', eventSlot: 'PM', eventType: 'Birthday', phone: '+919700088899', status: 'not_interested', notes: 'Went with another venue' },
-    { name: 'A very long customer name to test truncation', eventDate: '2026-09-30', eventSlot: 'PM', eventType: 'Reception', phone: '+919733344455', status: 'callback', notes: 'Call back after Diwali; deciding between two dates and needs to confirm the final guest count with family' }
-  ];
+  // ── Remove venue ─────────────────────────────────────────────────
+  // Removing a venue takes its leads with it (no orphaned-lead state in this
+  // app), so this is a real, irreversible delete — confirm before calling it.
+  let removingVenue = $state<{ id: string; name: string; count: number } | null>(null);
+  let removeBusy = $state(false);
+
+  function startRemoveVenue(v: { id: string; name: string; count: number }) {
+    removingVenue = v;
+  }
+  function cancelRemoveVenue() {
+    if (removeBusy) return;
+    removingVenue = null;
+  }
+  async function confirmRemoveVenue() {
+    if (!removingVenue || removeBusy) return;
+    const id = removingVenue.id;
+    removeBusy = true;
+    try {
+      const res = await fetch(`/api/venues/${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error();
+      delete leadsUi.leadsByVenue[id];
+      if (leadsUi.activeVenueId === id) leadsUi.activeVenueId = null; // re-derive to the next venue
+      removingVenue = null;
+      await invalidateAll();
+    } catch {
+      showToast("Couldn't remove the venue — check your connection.");
+    } finally {
+      removeBusy = false;
+    }
+  }
 
   // Rail order: most urgent first (follow-ups due, then lead count) — the
   // asymmetry encodes priority, not just available space (design-system.md §4).
@@ -41,16 +61,22 @@
     [...data.venues].sort((a, b) => b.followUps - a.followUps || b.count - a.count)
   );
 
-  // Seed mock rows once per venue; skip venues already in the store. Default
-  // the active venue to the most urgent one once data is available.
+  // The DB is the source of truth: (re)seed the store from each server load.
+  // Optimistic edits live in the store between loads and are persisted via PATCH,
+  // so overwriting on the next load simply reflects what was saved. Reads only
+  // `data` so switching venue tabs (which changes activeVenueId) never re-seeds
+  // and clobbers an in-flight optimistic edit.
   $effect(() => {
-    data.venues.forEach((v, idx) => {
-      if (leadsUi.leadsByVenue[v.id] !== undefined) return;
-      leadsUi.leadsByVenue[v.id] =
-        idx === 0
-          ? MOCK_TEMPLATES.map((t, i) => ({ ...t, id: `${v.id}-mock-${i}`, venueId: v.id }))
-          : [];
-    });
+    for (const v of data.venues) {
+      leadsUi.leadsByVenue[v.id] = (data.leadsByVenue[v.id] ?? []).map((l) => ({
+        ...l,
+        status: l.status as Status
+      }));
+    }
+  });
+
+  // Default the open venue to the most urgent one once data is available.
+  $effect(() => {
     if (!leadsUi.activeVenueId && data.venues.length) {
       setActiveVenue(rankedVenues[0]?.id ?? data.venues[0].id);
     }
@@ -63,22 +89,52 @@
     activeVenue ? sortLeads(leadsUi.leadsByVenue[activeVenue.id] ?? []) : []
   );
 
-  function handleStatusChange(leadId: string, newStatus: Status) {
-    for (const venueId of Object.keys(leadsUi.leadsByVenue)) {
-      const arr = leadsUi.leadsByVenue[venueId];
+  // Mutate one lead in the store in place; returns the previous value of the
+  // patched field so a failed save can be rolled back.
+  function patchLeadLocal<K extends keyof Lead>(leadId: string, key: K, value: Lead[K]): Lead[K] | undefined {
+    for (const arr of Object.values(leadsUi.leadsByVenue)) {
       const idx = arr.findIndex((l) => l.id === leadId);
       if (idx !== -1) {
-        arr[idx] = { ...arr[idx], status: newStatus };
-        return;
+        const prev = arr[idx][key];
+        arr[idx] = { ...arr[idx], [key]: value };
+        return prev;
       }
+    }
+    return undefined;
+  }
+
+  // Persist a single field through the one leads mutation route. Optimistic:
+  // the store is updated first; on failure we revert and warn.
+  async function persistLead(leadId: string, body: Record<string, unknown>): Promise<boolean> {
+    try {
+      const res = await fetch(`/api/leads/${leadId}`, {
+        method: 'PATCH',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      return res.ok;
+    } catch {
+      return false;
+    }
+  }
+
+  async function handleStatusChange(leadId: string, newStatus: Status) {
+    const prev = patchLeadLocal(leadId, 'status', newStatus);
+    if (prev === undefined || prev === newStatus) return;
+    if (await persistLead(leadId, { status: newStatus })) {
+      // Re-pull every load so Calls, venue counts, and the not-interested
+      // filter all reflect the change (SvelteKit caches loads between routes).
+      await invalidateAll();
+    } else {
+      patchLeadLocal(leadId, 'status', prev);
+      showToast("Couldn't save the status — check your connection.");
     }
   }
 
   // ── Inline notes editing ────────────────────────────────────────
   // A pencil in the Notes cell opens a small sheet (the cell is too narrow and
-  // the row height too clamped for an in-place textarea). Saving updates the
-  // store — the table's source of truth. When real leads replace the mock rows,
-  // route this through PATCH /api/leads/[id] like the calls screen does.
+  // the row height too clamped for an in-place textarea). Saving persists through
+  // PATCH /api/leads/[id] (optimistic, with rollback on failure).
   let editingNotes = $state<{ id: string; name: string } | null>(null);
   let notesDraft = $state('');
 
@@ -90,18 +146,21 @@
     editingNotes = null;
     notesDraft = '';
   }
-  function saveNotes() {
+  async function saveNotes() {
     if (!editingNotes) return;
-    const trimmed = notesDraft.trim();
-    for (const arr of Object.values(leadsUi.leadsByVenue)) {
-      const idx = arr.findIndex((l) => l.id === editingNotes!.id);
-      if (idx !== -1) {
-        arr[idx] = { ...arr[idx], notes: trimmed === '' ? null : trimmed };
-        break;
-      }
-    }
+    const id = editingNotes.id;
+    const next = notesDraft.trim() === '' ? null : notesDraft.trim();
     editingNotes = null;
     notesDraft = '';
+
+    const prev = patchLeadLocal(id, 'notes', next);
+    if (prev === undefined || prev === next) return;
+    if (await persistLead(id, { notes: next })) {
+      await invalidateAll();
+    } else {
+      patchLeadLocal(id, 'notes', prev);
+      showToast("Couldn't save the note — check your connection.");
+    }
   }
 
   // Focus the field when the sheet opens (keyboard + clear intent).
@@ -111,6 +170,12 @@
 
   let toast = $state<string | null>(null);
   let toastTimer: ReturnType<typeof setTimeout> | undefined;
+
+  function showToast(msg: string) {
+    toast = msg;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => (toast = null), 3000);
+  }
 
   function handleSendShowcase(leadId: string, plan: ShowcasePlan) {
     let name = '';
@@ -225,9 +290,21 @@
           >
             <div class="spread-head">
               <h2 class="spread-title text-h3">{activeVenue.name}</h2>
-              <button type="button" class="import-link" onclick={() => importPhoto(activeVenue.id)}>
-                Import photo
-              </button>
+              <div class="spread-head-actions">
+                <button type="button" class="import-link" onclick={() => importPhoto(activeVenue.id)}>
+                  Import photo
+                </button>
+                <button
+                  type="button"
+                  class="remove-venue-btn"
+                  aria-label={`Remove ${activeVenue.name}`}
+                  onclick={() => startRemoveVenue(activeVenue)}
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                  </svg>
+                </button>
+              </div>
             </div>
 
             {#if activeVenueLeads.length === 0}
@@ -326,6 +403,30 @@
     <div class="notes-sheet-actions">
       <button type="button" class="notes-sheet-cancel" onclick={cancelEditNotes}>Cancel</button>
       <button type="button" class="btn-primary notes-sheet-save" onclick={saveNotes}>Save notes</button>
+    </div>
+  </div>
+{/if}
+
+{#if removingVenue}
+  <div
+    class="notes-scrim"
+    role="presentation"
+    onclick={cancelRemoveVenue}
+    transition:fade={spreadFade('in')}
+  ></div>
+  <div class="notes-sheet" role="dialog" aria-modal="true" aria-label={`Remove ${removingVenue.name}`}>
+    <p class="notes-sheet-title">Remove {removingVenue.name}?</p>
+    <p class="remove-venue-warning">
+      This deletes {removingVenue.count}
+      {removingVenue.count === 1 ? 'lead' : 'leads'} for this venue too — it can't be undone.
+    </p>
+    <div class="notes-sheet-actions">
+      <button type="button" class="notes-sheet-cancel" onclick={cancelRemoveVenue} disabled={removeBusy}>
+        Cancel
+      </button>
+      <button type="button" class="remove-venue-confirm" onclick={confirmRemoveVenue} disabled={removeBusy}>
+        {removeBusy ? 'Removing…' : 'Remove venue'}
+      </button>
     </div>
   </div>
 {/if}
@@ -453,6 +554,36 @@
     color: var(--color-accent);
   }
 
+  .spread-head-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-1);
+  }
+  /* Quiet by default — destructive actions don't compete visually with
+     "Import photo" until the user actually reaches for it. */
+  .remove-venue-btn {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radius-md);
+    color: var(--color-text-tertiary);
+    background-color: transparent;
+    transition:
+      color var(--duration-base) var(--ease-premium),
+      background-color var(--duration-base) var(--ease-premium);
+  }
+  .remove-venue-btn svg {
+    width: 1.125rem;
+    height: 1.125rem;
+  }
+  .remove-venue-btn:hover {
+    color: var(--color-danger-text);
+    background-color: var(--color-danger-bg);
+  }
+
   .ghost-btn {
     display: inline-flex;
     align-items: center;
@@ -497,11 +628,14 @@
     width: 100%;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
+    /* Keep horizontal swipes inside the table — they never chain out to scroll
+       or shift the whole page viewport. */
+    overscroll-behavior-x: contain;
     scrollbar-width: thin;
   }
   .leads-table {
     width: 100%;
-    min-width: 950px;
+    min-width: 900px;
     table-layout: fixed;
     border-collapse: separate;
     border-spacing: 0;
@@ -511,7 +645,7 @@
     position: sticky;
     top: 0;
     z-index: 1;
-    padding: var(--spacing-1) var(--spacing-2);
+    padding: var(--spacing-1);
     text-align: left;
     font-size: var(--text-2xs);
     font-weight: 500;
@@ -536,8 +670,10 @@
     from { background-color: var(--color-accent-subtle); }
     to   { background-color: transparent; }
   }
+  /* Tight, even padding — each column carries only the width its content needs,
+     so inter-column dead space stays minimal on both desktop and mobile. */
   .leads-table td {
-    padding: var(--spacing-1) var(--spacing-2);
+    padding: var(--spacing-1);
     vertical-align: middle;
   }
   .leads-table tbody td {
@@ -546,15 +682,18 @@
 
   /* Ledger line-number column — the structural callback to the metaphor. */
   .col-num {
-    width: 40px;
+    width: 36px;
   }
   .cell-num {
     font-size: var(--text-xs);
     color: var(--color-text-tertiary);
   }
 
+  /* Honorifics are stripped upstream, so 160px holds almost every real name;
+     anything longer truncates cleanly rather than widening the row. */
   .col-name {
-    width: 150px;
+    width: 160px;
+    max-width: 160px;
   }
   .cell-name {
     display: block;
@@ -567,7 +706,7 @@
   }
 
   .col-date {
-    width: 175px;
+    width: 144px;
   }
   .cell-date {
     display: inline-flex;
@@ -596,7 +735,7 @@
     background-color: var(--color-bg-sunken);
   }
   .col-type {
-    width: 110px;
+    width: 104px;
   }
   .cell-type {
     overflow: hidden;
@@ -607,7 +746,7 @@
   }
 
   .col-phone {
-    width: 150px;
+    width: 140px;
     text-align: right;
   }
   .cell-phone {
@@ -621,12 +760,14 @@
     color: var(--color-accent-text);
   }
 
+  /* Guaranteed width so the status pill never squashes its label (the pill
+     itself is content-sized in StatusPill.svelte). */
   .col-status {
-    width: 120px;
+    width: 132px;
   }
 
   .col-notes {
-    width: 170px;
+    width: 150px;
   }
   .notes-cell {
     display: flex;
@@ -717,6 +858,32 @@
     font-size: var(--text-sm);
     font-weight: 600;
     color: var(--color-text-primary);
+  }
+  .remove-venue-warning {
+    font-size: var(--text-sm);
+    line-height: var(--leading-normal);
+    color: var(--color-text-secondary);
+  }
+  .remove-venue-confirm {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    padding-inline: var(--spacing-3);
+    border-radius: var(--radius-md);
+    font-size: var(--text-sm);
+    font-weight: 600;
+    color: var(--color-danger-text);
+    background-color: var(--color-danger-bg);
+    transition: opacity var(--duration-base) var(--ease-premium);
+  }
+  .remove-venue-confirm:hover {
+    opacity: 0.85;
+  }
+  .remove-venue-confirm:disabled,
+  .notes-sheet-cancel:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
   }
   .notes-sheet-field {
     width: 100%;

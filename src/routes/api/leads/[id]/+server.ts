@@ -19,6 +19,7 @@ type Patch = {
   status?: Status;
   nextFollowupOn?: string | null;
   lastContactedAt?: boolean; // true -> stamp now()
+  notes?: string | null; // inline notes edit from the leads dashboard
 };
 
 // One-tap status logging from the call list (and later the leads dashboard).
@@ -47,6 +48,10 @@ export const PATCH: RequestHandler = async ({ params, request, platform, locals 
   }
   if (body.lastContactedAt) {
     set.lastContactedAt = new Date();
+  }
+  if (body.notes !== undefined) {
+    const trimmed = typeof body.notes === 'string' ? body.notes.trim() : '';
+    set.notes = trimmed === '' ? null : trimmed;
   }
 
   if (Object.keys(set).length === 0) throw error(400, 'Nothing to update');

@@ -44,7 +44,8 @@
   }
 
   function focusItem(i: number) {
-    menuEl?.querySelectorAll<HTMLButtonElement>('[role="menuitem"]')[i]?.focus();
+    // preventScroll: don't let focusing a portaled item jump the viewport (mobile).
+    menuEl?.querySelectorAll<HTMLButtonElement>('[role="menuitem"]')[i]?.focus({ preventScroll: true });
   }
 
   async function openMenu() {
@@ -56,7 +57,7 @@
   }
   function closeMenu(refocus = true) {
     open = false;
-    if (refocus) triggerEl?.focus();
+    if (refocus) triggerEl?.focus({ preventScroll: true });
   }
   function select(plan: ShowcasePlan) {
     onSendShowcase(leadId, plan);

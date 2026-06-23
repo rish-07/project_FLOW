@@ -22,15 +22,15 @@ export function telLink(phone: string): string {
   return `tel:${phone}`;
 }
 
-/** 'YYYY-MM-DD' -> 'Mon 23 Nov'. */
+/**  "2026-04-20" -> "20 Apr 2026". */
 export function humanDate(iso: string): string {
   if (!iso) return '';
   const d = new Date(iso + 'T00:00:00');
   if (isNaN(d.getTime())) return iso;
-  return d.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' });
+  return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
-/** 'YYYY-MM-DD' + 'AM'|'PM' -> 'Mon 23 Nov · AM'. Slot omitted if empty. */
+/** 'YYYY-MM-DD' + 'AM'|'PM' -> '20 Apr 2026 · AM'. Slot omitted if empty. */
 export function formatDateSlot(iso: string, slot: string): string {
   const d = humanDate(iso);
   return slot ? `${d} · ${slot}` : d;

@@ -80,7 +80,9 @@
   }
 
   function focusOption(i: number) {
-    menuEl?.querySelectorAll<HTMLButtonElement>('[role="option"]')[i]?.focus();
+    // preventScroll: moving focus into the portaled menu must NOT scroll the
+    // viewport — on mobile that caused an aggressive jump when opening the pill.
+    menuEl?.querySelectorAll<HTMLButtonElement>('[role="option"]')[i]?.focus({ preventScroll: true });
   }
 
   async function openMenu() {
@@ -92,7 +94,7 @@
   }
   function closeMenu(refocus = true) {
     open = false;
-    if (refocus) triggerEl?.focus();
+    if (refocus) triggerEl?.focus({ preventScroll: true });
   }
   function select(s: Status) {
     onStatusChange(leadId, s);
@@ -216,13 +218,14 @@
 <span class="sr-only" aria-live="polite">{STATUS_LABELS[status]}</span>
 
 <style>
-  /* Trigger — temperature pill (§5): h-6, px-2.5, radius-full, fixed in a 120px cell. */
+  /* Trigger — temperature pill (§5): sized to its content so the label is always
+     fully readable; the host cell (.col-status) guarantees the column width. */
   .pill-trigger {
     display: inline-flex;
     align-items: center;
     gap: var(--spacing-1);
-    width: 100%;
-    max-width: 120px;
+    width: auto;
+    max-width: 100%;
     height: 1.5rem;
     padding-inline: 0.625rem;
     border-radius: var(--radius-full);
@@ -241,10 +244,7 @@
     animation: pill-pulse var(--duration-medium) var(--ease-spring);
   }
   .pill-label {
-    flex: 1;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    white-space: nowrap; /* never wrap or truncate the status word */
     text-align: left;
   }
   .caret {

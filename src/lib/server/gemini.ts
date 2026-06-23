@@ -61,7 +61,7 @@ The page has PRINTED date headers or slot labels, with bookings HANDWRITTEN bene
 
 Return one object per booking with these keys:
 
-- customer_name — the customer's name as written.
+- customer_name — Extract only the core first/given name and their traditional caste/community title if present (e.g., "Anji Reddy", "Gopal Goud"). Completely strip out any respectful honorific suffixes like "Garu", or standalone middle initials (e.g., transform "P. Anji Reddy Garu" to just "Anji Reddy").
 - event_type — one of: Marriage, Engagement, Reception, Sangeet, Birthday, Other. Map synonyms (e.g. "wedding" maps to Marriage, "bday" maps to Birthday). If genuinely unclear, use Other.
 - event_date — format YYYY-MM-DD, taken from the PRINTED slot the entry sits under. If only day and month are visible, choose the year that makes the date the next upcoming occurrence relative to the Reference Anchor Date above — never a date in the past. If the date is fully illegible, use an empty string and score its confidence low.
 - event_slot — "AM" or "PM" (see Event Slot rules below).

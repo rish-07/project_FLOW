@@ -1,11 +1,23 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
-  <rect width="32" height="32" rx="8" fill="#0F1117" />
-  <path
-    d="M9 20.5v1.25A2.25 2.25 0 0 0 11.25 24h9.5A2.25 2.25 0 0 0 23 21.75V20.5M19.5 12 16 8.5m0 0L12.5 12M16 8.5V19"
-    fill="none"
-    stroke="#2DD4BF"
-    stroke-width="2"
-    stroke-linecap="round"
-    stroke-linejoin="round"
-  />
+  <!--
+    Booking Capture mark — a bound ledger page: brass binding spine + ruled ink
+    entries. Adapts to the browser tab via prefers-color-scheme (Parchment in
+    light, Ink in dark); brass is the constant accent in both.
+  -->
+  <style>
+    .bg { fill: #F2ECDD; }
+    .ink { fill: #1B1812; }
+    .brass { fill: #C89B3C; }
+    @media (prefers-color-scheme: dark) {
+      .bg { fill: #15130F; }
+      .ink { fill: #F2ECDD; }
+    }
+  </style>
+  <rect class="bg" width="32" height="32" rx="6" />
+  <!-- binding spine (the one accent) -->
+  <rect class="brass" x="7" y="8" width="2.5" height="16" rx="1.25" />
+  <!-- ruled entries; the last is shorter — entries vary, like real handwriting -->
+  <rect class="ink" x="12.5" y="10.1" width="12" height="1.8" rx="0.9" />
+  <rect class="ink" x="12.5" y="15.1" width="12" height="1.8" rx="0.9" />
+  <rect class="ink" x="12.5" y="20.1" width="8.5" height="1.8" rx="0.9" />
 </svg>
