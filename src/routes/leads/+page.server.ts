@@ -45,6 +45,7 @@ function toLead(r: typeof leads.$inferSelect) {
     eventSlot: r.eventSlot,
     eventType: r.eventType,
     phone: r.phonePrimary,
+    phoneSecondary: r.phoneSecondary,
     status: r.status,
     notes: r.notes
   };

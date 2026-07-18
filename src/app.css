@@ -67,7 +67,7 @@
   --breakpoint-xl:  1280px;  /* wide desktop                    */
 
   /* ── Component metrics ──────────────────────────────────────────────── */
-  --tab-bar-height: 4rem;    /* 64px — bottom tab bar (excl. safe area) */
+  --tab-bar-height: 4rem;    /* 64px — floating nav pill height, for bottom clearance */
   --rail-width:     15rem;   /* 240px — leads venue-tab rail, desktop   */
 
   /* ── Colours — "Parchment" (light) mode, default tokens ──────────────── */
@@ -281,18 +281,6 @@
     text-transform: uppercase;
     font-weight: 500;
     color: var(--color-text-tertiary);
-  }
-
-  /* Bottom tab bar — normal document flow at the end of the app shell (§5).
-     It is NOT fixed: the shell is a flex column with `main` growing to fill, so
-     the bar rests at the viewport bottom on short pages and sits after the
-     content on long ones. A hairline top rule is its only separation (a ledger
-     is flat); safe-area padding keeps it clear of the home indicator. */
-  .tab-bar {
-    padding-bottom: env(safe-area-inset-bottom, 0px);
-    height: calc(var(--tab-bar-height) + env(safe-area-inset-bottom, 0px));
-    border-top: 1px solid var(--color-border-base);
-    background-color: var(--color-bg-elevated);
   }
 
   /* Skeleton shimmer (§6). */

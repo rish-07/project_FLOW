@@ -26,15 +26,10 @@ export const load: PageServerLoad = async ({ url, platform }) => {
     .from(leads)
     .where(and(eq(leads.sessionId, sessionId), eq(leads.isConfirmed, false)));
 
-  // Every page in a batch shares this session; surface all of their source
-  // photos (distinct, in row order) so the confirm screen can show the whole set.
-  const sourceImageKeys = [
-    ...new Set(rows.map((r) => r.sourceImageKey).filter((k): k is string => !!k))
-  ];
-
   return {
     sessionId,
-    sourceImageKeys,
+    // Each booking carries its own source page so the confirm screen can show
+    // that page directly above the booking's fields for cross-checking.
     leads: rows.map((r) => ({
       id: r.id,
       customerName: r.customerName,
@@ -44,6 +39,7 @@ export const load: PageServerLoad = async ({ url, platform }) => {
       phonePrimary: r.phonePrimary,
       phoneSecondary: r.phoneSecondary ?? '',
       notes: r.notes ?? '',
+      sourceImageKey: r.sourceImageKey,
       confidence: parseConfidence(r.extractionConfidence)
     }))
   };

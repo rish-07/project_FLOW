@@ -3,7 +3,7 @@
   import { onMount } from 'svelte';
   import { page } from '$app/stores';
   import { goto } from '$app/navigation';
-  import TabBar from '$lib/components/TabBar.svelte';
+  import FloatingNav from '$lib/components/nav/FloatingNav.svelte';
   import ThemeToggle from '$lib/components/ThemeToggle.svelte';
   import OverlayHost from '$lib/components/OverlayHost.svelte';
   import DropZone from '$lib/components/DropZone.svelte';
@@ -57,7 +57,7 @@
       {@render children?.()}
     </main>
 
-    <TabBar />
+    <FloatingNav />
 
     <!-- Planned-feature seams (Phase 8): overlay host is idle until a status
          transition opens it; the dropzone routes drops into upload→confirm. -->
@@ -96,19 +96,19 @@
     color: var(--color-text-primary);
   }
 
-  /* Sticky-footer shell: the tab bar lives in normal document flow at the end.
-     `main` grows to fill the viewport, so on short pages the bar rests at the
-     bottom (like the empty states) and on long pages it sits right after the
-     content — no fixed overlay, no dead void above a floating bar. */
+  /* The nav is a fixed floating pill (FloatingNav), so the shell no longer
+     reserves a footer slot — `main` just grows to fill the viewport. */
   .app-shell {
     display: flex;
     flex-direction: column;
     min-height: 100dvh;
   }
 
+  /* Reserve clearance so no screen's content or bottom control hides behind the
+     floating pill: safe area + pill height (~64px) + its bottom gap + breathing. */
   main {
     flex: 1;
     padding-top: var(--spacing-2);
-    padding-bottom: var(--spacing-3);
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 5.5rem);
   }
 </style>

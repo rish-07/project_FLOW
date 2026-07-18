@@ -29,6 +29,7 @@ export interface Lead {
   eventSlot: string; // 'AM' | 'PM'
   eventType: string;
   phone: string; // +91XXXXXXXXXX
+  phoneSecondary: string | null;
   status: Status;
   notes: string | null;
   isNew?: boolean; // transient highlight after import

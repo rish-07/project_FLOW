@@ -1,6 +1,7 @@
 <script lang="ts">
   import { enhance } from '$app/forms';
   import EmptyState from '$lib/components/EmptyState.svelte';
+  import ZoomableImage from '$lib/components/ZoomableImage.svelte';
   import { LOW_CONFIDENCE, isValidPhone, type Confidence } from '$lib/utils';
   import type { PageData, ActionData } from './$types';
 
@@ -17,6 +18,7 @@
     phonePrimary: string;
     phoneSecondary: string;
     notes: string;
+    sourceImageKey: string | null;
     confidence: Confidence | null;
   };
 
@@ -38,7 +40,7 @@
   // What gets sent to the save action: the kept cards, minus display-only fields.
   const payload = $derived(
     JSON.stringify(
-      cards.map(({ confidence, ...rest }) => rest)
+      cards.map(({ confidence, sourceImageKey, ...rest }) => rest)
     )
   );
 
@@ -84,19 +86,6 @@
   </EmptyState>
 {:else}
   <div class="confirm-screen">
-    {#if data.sourceImageKeys.length}
-      <div class="photo-rail" role="group" aria-label="Uploaded diary pages">
-        {#each data.sourceImageKeys as key, i (key)}
-          <img
-            class="source-photo"
-            src={`/api/photos/${key}`}
-            alt={data.sourceImageKeys.length > 1 ? `Diary page ${i + 1}` : 'The diary page you uploaded'}
-            loading="lazy"
-          />
-        {/each}
-      </div>
-    {/if}
-
     <header class="intro">
       <p class="overline">Step 2 · Confirm</p>
       <h1 class="intro-title">Check each booking</h1>
@@ -114,6 +103,15 @@
               </svg>
             </button>
           </div>
+
+          {#if c.sourceImageKey}
+            <div class="card-photo">
+              <ZoomableImage
+                src={`/api/photos/${c.sourceImageKey}`}
+                alt={`Diary page for booking ${i + 1}`}
+              />
+            </div>
+          {/if}
 
           <div class="fields">
             <div class="field field-full">
@@ -231,37 +229,9 @@
     gap: var(--spacing-3);
   }
 
-  /* ── Source photos (sticky reference rail — all pages in the batch) ─── */
-  .photo-rail {
-    position: sticky;
-    top: 0;
-    z-index: 10;
-    display: flex;
-    gap: var(--spacing-1);
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: thin;
-    padding-block: var(--spacing-2);
-    background-color: var(--color-bg-base);
-    scroll-snap-type: x proximity;
-  }
-  .source-photo {
-    flex: 0 0 auto;
-    height: clamp(9rem, 28vh, 18rem);
-    width: auto;
-    max-width: 86%;
-    object-fit: contain;
-    background-color: var(--color-bg-sunken);
-    border: 1px solid var(--color-border-base);
-    border-radius: var(--radius-lg);
-    scroll-snap-align: start;
-  }
-  /* A single page fills the width as before; only a real batch scrolls. */
-  .photo-rail:has(.source-photo:only-child) .source-photo {
-    width: 100%;
-    max-width: 100%;
-    height: auto;
-    max-height: clamp(9rem, 28vh, 18rem);
+  /* Each booking's own source page, shown above its fields for cross-checking. */
+  .card-photo {
+    margin-bottom: var(--spacing-2);
   }
 
   .intro-title {
@@ -424,9 +394,9 @@
   /* ── Sticky save bar (above the tab bar) ───────────────────────── */
   .save-bar {
     position: sticky;
-    /* Tab bar is in normal flow now, so the save bar sticks to the viewport
-       bottom; the bar appears below it once you scroll to the end. */
-    bottom: 0;
+    /* Sit above the floating nav pill (fixed at the viewport bottom) so the
+       save CTA is never hidden behind it. */
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 5rem);
     z-index: 20;
     display: flex;
     flex-direction: column;

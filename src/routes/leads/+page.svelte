@@ -316,66 +316,60 @@
                 <button class="ghost-btn" type="button" onclick={() => importPhoto(activeVenue.id)}>Import from photo</button>
               </div>
             {:else}
-              <div class="leads-table-scroll">
-                <table class="leads-table">
-                  <thead>
-                    <tr>
-                      <th class="col-num" scope="col">#</th>
-                      <th class="col-name" scope="col">Name</th>
-                      <th class="col-date" scope="col">Date</th>
-                      <th class="col-type" scope="col">Event type</th>
-                      <th class="col-phone" scope="col">Phone</th>
-                      <th class="col-status" scope="col">Status</th>
-                      <th class="col-notes" scope="col">Notes</th>
-                      <th class="col-send" scope="col">Send</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {#each activeVenueLeads as lead, i (lead.id)}
-                      <tr class="lead-row" class:is-new={lead.isNew} animate:flip={flipParams()}>
-                        <td class="col-num cell-num tabular">{String(i + 1).padStart(2, '0')}</td>
-                        <td class="col-name"><span class="cell-name" title={lead.name}>{lead.name}</span></td>
-                        <td class="col-date">
-                          <span class="cell-date" title={dateSlotLabel(lead)}>
-                            <span class="date-text tabular">{humanDate(lead.eventDate)}</span>
-                            {#if lead.eventSlot}<span class="slot-tag tabular">{lead.eventSlot}</span>{/if}
-                          </span>
-                        </td>
-                        <td class="col-type cell-type" title={lead.eventType}>{lead.eventType}</td>
-                        <td class="col-phone">
-                          <a class="cell-phone tabular" href={telLink(lead.phone)}>{prettyPhone(lead.phone)}</a>
-                        </td>
-                        <td class="col-status">
-                          <StatusPill
-                            leadId={lead.id}
-                            status={lead.status}
-                            name={lead.name}
-                            onStatusChange={handleStatusChange}
-                          />
-                        </td>
-                        <td class="col-notes">
-                          <div class="notes-cell">
-                            <span class="cell-notes" title={lead.notes ?? ''}>{lead.notes ?? '—'}</span>
-                            <button
-                              type="button"
-                              class="notes-edit"
-                              aria-label={`Edit notes for ${lead.name}`}
-                              onclick={() => startEditNotes(lead)}
-                            >
-                              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                <path d="M16.862 4.487l1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Z" />
-                              </svg>
-                            </button>
-                          </div>
-                        </td>
-                        <td class="col-send">
-                          <SendMenu leadId={lead.id} name={lead.name} onSendShowcase={handleSendShowcase} />
-                        </td>
-                      </tr>
-                    {/each}
-                  </tbody>
-                </table>
-              </div>
+              <ul class="lead-cards">
+                {#each activeVenueLeads as lead (lead.id)}
+                  <li class="lead-card" class:is-new={lead.isNew} animate:flip={flipParams()}>
+                    <div class="card-top">
+                      <span class="card-datetime" title={dateSlotLabel(lead)}>
+                        <span class="card-date tabular">{humanDate(lead.eventDate)}</span>
+                        {#if lead.eventSlot}<span class="card-slot tabular">{lead.eventSlot}</span>{/if}
+                      </span>
+                      <StatusPill
+                        leadId={lead.id}
+                        status={lead.status}
+                        name={lead.name}
+                        onStatusChange={handleStatusChange}
+                      />
+                    </div>
+
+                    <h3 class="card-name" title={lead.name}>{lead.name}</h3>
+                    <p class="card-type">{lead.eventType}</p>
+
+                    <div class="card-phones">
+                      <a class="card-phone card-phone-primary tabular" href={telLink(lead.phone)}>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                          <path d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 0 0 2.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 0 1-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 0 0-1.091-.852H4.5A2.25 2.25 0 0 0 2.25 4.5v2.25Z" />
+                        </svg>
+                        {prettyPhone(lead.phone)}
+                      </a>
+                      {#if lead.phoneSecondary}
+                        <a class="card-phone card-phone-secondary tabular" href={telLink(lead.phoneSecondary)}>
+                          {prettyPhone(lead.phoneSecondary)}
+                        </a>
+                      {/if}
+                    </div>
+
+                    <div class="card-foot">
+                      <span class="card-notes" class:empty={!lead.notes} title={lead.notes ?? ''}>
+                        {lead.notes ?? 'No notes yet'}
+                      </span>
+                      <div class="card-actions">
+                        <button
+                          type="button"
+                          class="notes-edit"
+                          aria-label={`Edit notes for ${lead.name}`}
+                          onclick={() => startEditNotes(lead)}
+                        >
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M16.862 4.487l1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Z" />
+                          </svg>
+                        </button>
+                        <SendMenu leadId={lead.id} name={lead.name} onSendShowcase={handleSendShowcase} />
+                      </div>
+                    </div>
+                  </li>
+                {/each}
+              </ul>
             {/if}
           </div>
         {/key}
@@ -530,13 +524,16 @@
     border: 1px solid var(--color-border-base);
     overflow: hidden;
   }
+  /* A filled header band + stronger rule so the venue title reads as the panel's
+     header, not the first row of the card stack below it. */
   .spread-head {
     display: flex;
-    align-items: baseline;
+    align-items: center;
     justify-content: space-between;
     gap: var(--spacing-2);
-    padding: var(--spacing-3) var(--spacing-2) var(--spacing-2);
-    border-bottom: 1px solid var(--color-border-base);
+    padding: var(--spacing-2);
+    background-color: var(--color-bg-sunken);
+    border-bottom: 1px solid var(--color-border-strong);
   }
   .spread-title {
     color: var(--color-text-primary);
@@ -623,158 +620,126 @@
     color: var(--color-text-tertiary);
   }
 
-  /* ── Ledger table ─────────────────────────────────────────────────────── */
-  .leads-table-scroll {
-    width: 100%;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    /* Keep horizontal swipes inside the table — they never chain out to scroll
-       or shift the whole page viewport. */
-    overscroll-behavior-x: contain;
-    scrollbar-width: thin;
+  /* ── Lead cards (vertical layout — uses vertical space, no horizontal scroll,
+     so the page never exceeds the viewport width) ───────────────────────── */
+  .lead-cards {
+    display: flex;
+    flex-direction: column;
+    list-style: none;
   }
-  .leads-table {
-    width: 100%;
-    min-width: 900px;
-    table-layout: fixed;
-    border-collapse: separate;
-    border-spacing: 0;
-  }
-
-  .leads-table thead th {
-    position: sticky;
-    top: 0;
-    z-index: 1;
-    padding: var(--spacing-1);
-    text-align: left;
-    font-size: var(--text-2xs);
-    font-weight: 500;
-    text-transform: uppercase;
-    letter-spacing: var(--tracking-wide);
-    color: var(--color-text-tertiary);
-    background-color: var(--color-bg-sunken);
-    white-space: nowrap;
-  }
-
-  .lead-row {
-    height: 72px;
+  .lead-card {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-0h);
+    padding: var(--spacing-2);
+    border-top: 1px solid var(--color-border-base);
     transition: background-color var(--duration-base) var(--ease-premium);
   }
-  .lead-row:hover {
-    background-color: var(--color-bg-sunken);
+  .lead-card:first-child {
+    border-top: none;
   }
-  .lead-row.is-new {
-    animation: lead-row-new var(--duration-long) var(--ease-enter);
+  /* Alternating tone keeps adjacent cards distinct without heavy borders — kept
+     gentle (a partial sunken tint) so it whispers rather than stripes. */
+  .lead-card:nth-child(even) {
+    background-color: color-mix(in srgb, var(--color-bg-sunken), var(--color-bg-elevated) 55%);
   }
-  @keyframes lead-row-new {
+  .lead-card.is-new {
+    animation: lead-card-new var(--duration-long) var(--ease-enter);
+  }
+  @keyframes lead-card-new {
     from { background-color: var(--color-accent-subtle); }
     to   { background-color: transparent; }
   }
-  /* Tight, even padding — each column carries only the width its content needs,
-     so inter-column dead space stays minimal on both desktop and mobile. */
-  .leads-table td {
-    padding: var(--spacing-1);
-    vertical-align: middle;
-  }
-  .leads-table tbody td {
-    border-top: 1px solid var(--color-border-base);
-  }
 
-  /* Ledger line-number column — the structural callback to the metaphor. */
-  .col-num {
-    width: 36px;
+  /* Top row: date + slot on the left, status pill on the right. */
+  .card-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--spacing-2);
   }
-  .cell-num {
-    font-size: var(--text-xs);
-    color: var(--color-text-tertiary);
-  }
-
-  /* Honorifics are stripped upstream, so 160px holds almost every real name;
-     anything longer truncates cleanly rather than widening the row. */
-  .col-name {
-    width: 160px;
-    max-width: 160px;
-  }
-  .cell-name {
-    display: block;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    font-size: var(--text-base);
-    font-weight: 500;
-    color: var(--color-text-primary);
-  }
-
-  .col-date {
-    width: 144px;
-  }
-  .cell-date {
+  .card-datetime {
     display: inline-flex;
     align-items: center;
     gap: var(--spacing-1);
-    overflow: hidden;
-    white-space: nowrap;
+    min-width: 0;
   }
-  .date-text {
-    overflow: hidden;
-    text-overflow: ellipsis;
+  .card-date {
     font-family: var(--font-mono);
     font-size: var(--text-sm);
     color: var(--color-text-secondary);
+    white-space: nowrap;
   }
-  /* AM/PM as a small mono uppercase tag beside the date. */
-  .slot-tag {
+  /* AM/PM tag — a bordered mono chip so it reads on either alternating tone. */
+  .card-slot {
     flex-shrink: 0;
     padding: 0.0625rem 0.3125rem;
+    border: 1px solid var(--color-border-base);
     border-radius: var(--radius-sm);
     font-family: var(--font-mono);
     font-size: var(--text-2xs);
     font-weight: 600;
     letter-spacing: var(--tracking-wide);
     color: var(--color-text-secondary);
-    background-color: var(--color-bg-sunken);
-  }
-  .col-type {
-    width: 104px;
-  }
-  .cell-type {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    font-size: var(--text-sm);
-    color: var(--color-text-secondary);
-    white-space: nowrap;
   }
 
-  .col-phone {
-    width: 140px;
-    text-align: right;
+  /* Name — the card's headline. */
+  .card-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: var(--text-lg);
+    font-weight: 600;
+    line-height: var(--leading-snug);
+    color: var(--color-text-primary);
   }
-  .cell-phone {
-    font-family: var(--font-mono);
+  .card-type {
     font-size: var(--text-sm);
     color: var(--color-text-secondary);
-    white-space: nowrap;
+  }
+
+  .card-phones {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-0h);
+    margin-top: var(--spacing-0h);
+  }
+  .card-phone {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-1);
+    align-self: flex-start;
+    font-family: var(--font-mono);
     transition: color var(--duration-base) var(--ease-premium);
   }
-  .cell-phone:hover {
+  .card-phone svg {
+    flex-shrink: 0;
+    width: 0.875rem;
+    height: 0.875rem;
+  }
+  .card-phone-primary {
+    font-size: var(--text-sm);
+    color: var(--color-text-primary);
+  }
+  .card-phone-secondary {
+    padding-left: calc(0.875rem + var(--spacing-1)); /* align under the primary's text */
+    font-size: var(--text-xs);
+    color: var(--color-text-tertiary);
+  }
+  .card-phone:hover {
     color: var(--color-accent-text);
   }
 
-  /* Guaranteed width so the status pill never squashes its label (the pill
-     itself is content-sized in StatusPill.svelte). */
-  .col-status {
-    width: 132px;
-  }
-
-  .col-notes {
-    width: 150px;
-  }
-  .notes-cell {
+  /* Bottom row: notes preview + edit + send. */
+  .card-foot {
     display: flex;
     align-items: center;
     gap: var(--spacing-1);
+    margin-top: var(--spacing-1);
+    padding-top: var(--spacing-1);
+    border-top: 1px solid var(--color-border-base);
   }
-  .cell-notes {
+  .card-notes {
     flex: 1;
     min-width: 0;
     overflow: hidden;
@@ -783,51 +748,38 @@
     font-size: var(--text-sm);
     color: var(--color-text-secondary);
   }
-  /* Low-profile pencil — appears on row hover/focus; always shown on touch. */
-  .notes-edit {
-    position: relative;
+  .card-notes.empty {
+    color: var(--color-text-tertiary);
+    font-style: italic;
+  }
+  .card-actions {
     flex-shrink: 0;
     display: inline-flex;
     align-items: center;
+    gap: var(--spacing-0h);
+  }
+  /* Notes pencil — always visible in the card (room for it, and touch-first). */
+  .notes-edit {
+    display: inline-flex;
+    align-items: center;
     justify-content: center;
-    width: 28px;
-    height: 28px;
+    width: 32px;
+    height: 32px;
     border-radius: var(--radius-sm);
     color: var(--color-text-tertiary);
     background-color: transparent;
     cursor: pointer;
-    opacity: 0;
     transition:
-      opacity var(--duration-base) var(--ease-premium),
       color var(--duration-base) var(--ease-premium),
       background-color var(--duration-base) var(--ease-premium);
   }
-  .notes-edit::after {
-    content: '';
-    position: absolute;
-    inset: -8px;
-  }
   .notes-edit svg {
-    width: 0.875rem;
-    height: 0.875rem;
-  }
-  .lead-row:hover .notes-edit,
-  .notes-edit:focus-visible {
-    opacity: 1;
+    width: 1rem;
+    height: 1rem;
   }
   .notes-edit:hover {
     color: var(--color-accent-text);
-    background-color: var(--color-bg-sunken);
-  }
-  @media (hover: none) {
-    .notes-edit {
-      opacity: 1;
-    }
-  }
-
-  .col-send {
-    width: 56px;
-    text-align: center;
+    background-color: var(--color-accent-subtle);
   }
 
   /* ── Notes edit sheet (centred dialog; mobile-friendly) ────────────────── */
@@ -927,38 +879,6 @@
     min-height: 44px;
   }
 
-  /* ── Below lg: freeze ONLY the narrow row-number column on horizontal scroll.
-     Freezing Name too (its prior behaviour) ate almost the whole width on a
-     phone; the # column is 40px, so the rest of the row stays readable. ───── */
-  @media (max-width: 1023px) {
-    .col-num {
-      position: sticky;
-      left: 0;
-      z-index: 1;
-    }
-    .leads-table tbody .col-num {
-      background-color: var(--color-bg-elevated);
-    }
-    .lead-row:hover .col-num {
-      background-color: var(--color-bg-sunken);
-    }
-    .leads-table thead .col-num {
-      z-index: 2;
-    }
-    /* Edge shadow on the frozen # — affords "more content to the right". */
-    .col-num::after {
-      content: '';
-      position: absolute;
-      top: 0;
-      right: 0;
-      bottom: 0;
-      width: 8px;
-      transform: translateX(100%);
-      background: linear-gradient(to right, var(--color-border-base), transparent);
-      pointer-events: none;
-    }
-  }
-
   /* ── lg+: rail becomes a fixed-width vertical column ────────────────────── */
   @media (min-width: 1024px) {
     .ledger-desk {
@@ -987,7 +907,8 @@
   .toast {
     position: fixed;
     z-index: 70;
-    bottom: calc(env(safe-area-inset-bottom, 0px) + var(--spacing-2));
+    /* Clear the floating nav pill at the viewport bottom. */
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 5rem);
     left: var(--spacing-2);
     right: var(--spacing-2);
     max-width: 480px;
@@ -1004,7 +925,7 @@
 
   @media (prefers-reduced-motion: reduce) {
     .rail-tab,
-    .lead-row {
+    .lead-card {
       transition: none;
     }
   }
